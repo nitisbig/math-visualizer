@@ -37,9 +37,11 @@
 
 .stage.ar-wide { aspect-ratio: 2 / 1; }
 .stage.ar-map { aspect-ratio: 16 / 10; }
+.stage.ar-split { aspect-ratio: 2 / 1; }
 @media (max-width: 640px) {
   .stage.ar-wide { aspect-ratio: 4 / 3; }
   .stage.ar-map { aspect-ratio: 1 / 1; }
+  .stage.ar-split { aspect-ratio: 3 / 4; }
 }
 
 .stage.grab { cursor: grab; }
@@ -292,4 +294,37 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
+}
+
+/* ---- Live matrix (4D page) ---- */
+.mat-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+}
+.mat {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.mat th {
+  font-weight: 500;
+  padding: 2px 8px;
+}
+.mat td {
+  padding: 3px 10px;
+  text-align: right;
+  color: var(--muted);
+  border-left: 1px solid var(--grid);
+}
+.mat td.zero { color: var(--line); }
+.mat td.on {
+  color: var(--ink);
+  background: rgba(245, 247, 250, 0.05);
+}
+.mat-note {
+  flex: 1 1 220px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
 }

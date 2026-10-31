@@ -1,5 +1,7 @@
 ---
 // Static SVG previews for concept cards (no JS, no image requests).
+import { TESSERACT, apply, camera, centered, perspective, rotation } from "../visualizers/fourth-dimension/math";
+
 interface Props {
   slug: string;
 }
@@ -22,6 +24,14 @@ const seq = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32].map((n, i) => ({
   v: Math.pow(1 + 1 / n, n),
 }));
 const yOf = (v: number) => 150 - ((v - 1.9) / (2.8 - 1.9)) * 120;
+
+// Fourth dimension: the tesseract's perspective shadow, edges colored by axis.
+const AXIS_HEX = ["#FF5A4E", "#FF9F3D", "#FFD17E", "#5FB6FF"];
+const cam = camera({ yaw: -0.6, pitch: 0.42 }, 150, 82, 54);
+const tess = TESSERACT.verts.map((v) => cam(perspective(apply(rotation("zw", 0.35), centered(v)), 2.2)));
+const tessEdges = [...TESSERACT.edges].sort(
+  (e, f) => tess[f.a].z + tess[f.b].z - tess[e.a].z - tess[e.b].z,
+);
 ---
 
 <svg viewBox="0 0 300 160" class="thumb" aria-hidden="true">
@@ -51,6 +61,25 @@ const yOf = (v: number) => 150 - ((v - 1.9) / (2.8 - 1.9)) * 120;
         ))}
         {seq.map((s) => (
           <circle cx={s.x} cy={yOf(s.v)} r="3" fill="#FFB020" />
+        ))}
+      </g>
+    )
+  }
+  {
+    slug === "fourth-dimension" && (
+      <g stroke-width="1.6" stroke-linecap="round">
+        {tessEdges.map((e) => (
+          <line
+            x1={tess[e.a].x.toFixed(1)}
+            y1={tess[e.a].y.toFixed(1)}
+            x2={tess[e.b].x.toFixed(1)}
+            y2={tess[e.b].y.toFixed(1)}
+            stroke={AXIS_HEX[e.axis]}
+            stroke-opacity="0.85"
+          />
+        ))}
+        {tess.map((p) => (
+          <circle cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="1.8" fill="#F5F7FA" />
         ))}
       </g>
     )

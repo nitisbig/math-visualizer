@@ -13,6 +13,10 @@ export const C = {
   lime: "#C6FF4A",
   blue: "#5FB6FF",
   alert: "#FF4D4D",
+  // Axis colors (4D page): x red, y orange, z yellow; w is `blue`.
+  x: "#FF5A4E",
+  y: "#FF9F3D",
+  z: "#FFD17E",
 } as const;
 
 export type Token = keyof typeof C;

@@ -60,6 +60,15 @@ a {
   color: var(--muted);
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .mono {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
@@ -72,6 +81,9 @@ a {
 .c-lime { color: var(--lime); }
 .c-blue { color: var(--blue); }
 .c-alert { color: var(--alert); }
+.c-x { color: var(--x); }
+.c-y { color: var(--y); }
+.c-z { color: var(--z); }
 
 @media (prefers-reduced-motion: reduce) {
   *,

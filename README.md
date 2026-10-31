@@ -40,7 +40,7 @@ npm run preview   # serve dist/
 4. Run `npm test && npm run check && npm run build`.
 
 Conventions:
-- **One meaning per color on a page**, and every widget has a `Legend`. Gradient descent: cyan = loss, amber = position/path, magenta = slope/gradient, lime = minimum, red = diverged.
+- **One meaning per color on a page**, and every widget has a `Legend`. Gradient descent: cyan = loss, amber = position/path, magenta = slope/gradient, lime = minimum, red = diverged. Fourth dimension: edges colored by axis (x red, y orange, z yellow, w blue, matching the video), and blue alone marks the slice.
 - Short text: the widget teaches. Aim for 3–4 "What you're seeing" steps.
 - Give every URL key a unique name across the widgets on one page (`lr1` vs `lr`).
 - Handle pointer events (mouse and touch) and keep the native range inputs so the keyboard works. `prefersReducedMotion()` turns animations into jumps.
