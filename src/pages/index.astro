@@ -1,0 +1,161 @@
+---
+import { getCollection } from "astro:content";
+import Base from "../layouts/Base.astro";
+import Thumb from "../components/Thumb.astro";
+import { CATEGORIES, SITE } from "../site.config";
+
+const concepts = (await getCollection("concepts", (c) => !c.data.draft)).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+const counts = Object.fromEntries(CATEGORIES.map((c) => [c, concepts.filter((x) => x.data.category === c).length]));
+---
+
+<Base>
+  <section class="wrap hero">
+    <p class="eyebrow">Interactive math</p>
+    <h1>Don’t just watch it.<br /><span>Play with it.</span></h1>
+    <p class="lede">{SITE.description}</p>
+  </section>
+
+  <section class="wrap" id="concepts" aria-labelledby="concepts-h">
+    <div class="list-head">
+      <h2 id="concepts-h">Concepts</h2>
+      <div class="chips" role="group" aria-label="Filter by field">
+        <button type="button" class="chip on" data-filter="all" aria-pressed="true">All</button>
+        {
+          CATEGORIES.map((c) => (
+            <button type="button" class="chip" data-filter={c} aria-pressed="false" disabled={counts[c] === 0}>
+              {c}
+            </button>
+          ))
+        }
+      </div>
+    </div>
+
+    <ul class="grid">
+      {
+        concepts.map((c) => (
+          <li data-category={c.data.category}>
+            <a href={`/${c.id}/`} class="card">
+              <Thumb slug={c.id} />
+              <div class="card-body">
+                <span class="eyebrow">{c.data.category}</span>
+                <h3>{c.data.title}</h3>
+                <p>{c.data.description}</p>
+              </div>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="more">More concepts arrive with each new video.</p>
+  </section>
+</Base>
+
+<script>
+  const chips = document.querySelectorAll<HTMLButtonElement>(".chip");
+  const items = document.querySelectorAll<HTMLElement>(".grid > li");
+  chips.forEach((chip) =>
+    chip.addEventListener("click", () => {
+      const f = chip.dataset.filter;
+      chips.forEach((c) => {
+        c.classList.toggle("on", c === chip);
+        c.setAttribute("aria-pressed", String(c === chip));
+      });
+      items.forEach((li) => (li.hidden = f !== "all" && li.dataset.category !== f));
+    }),
+  );
+</script>
+
+<style>
+  .hero {
+    padding: 88px var(--gutter) 64px;
+  }
+  .hero h1 {
+    font-size: clamp(40px, 8vw, 76px);
+    letter-spacing: -0.03em;
+    margin: 14px 0 20px;
+  }
+  .hero h1 span {
+    color: var(--cyan);
+    text-shadow: 0 0 24px rgba(34, 211, 238, 0.35);
+  }
+  .lede {
+    font-size: clamp(17px, 2.2vw, 20px);
+    color: var(--muted);
+    max-width: 34em;
+  }
+  .list-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .list-head h2 {
+    font-size: 22px;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    padding: 6px 14px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: none;
+    color: var(--muted);
+    font: 500 13px var(--font-body);
+    cursor: pointer;
+  }
+  .chip.on {
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+  .chip:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    display: block;
+    height: 100%;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+    text-decoration: none;
+    background: var(--card);
+    transition: border-color 0.25s var(--ease-out), transform 0.25s var(--ease-out);
+  }
+  .card:hover {
+    border-color: var(--muted);
+    transform: translateY(-2px);
+  }
+  .card-body {
+    padding: 16px 18px 20px;
+    border-top: 1px solid var(--grid);
+  }
+  .card h3 {
+    font-size: 20px;
+    margin: 6px 0 8px;
+  }
+  .card p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .more {
+    margin-top: 28px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>

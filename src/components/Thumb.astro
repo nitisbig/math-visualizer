@@ -1,0 +1,67 @@
+---
+// Static SVG previews for concept cards (no JS, no image requests).
+interface Props {
+  slug: string;
+}
+const { slug } = Astro.props;
+
+// Gradient descent: contour rings + a descending zig-zag path.
+const rings = [16, 30, 46, 64, 84];
+const path = [
+  [212, 34],
+  [176, 86],
+  [196, 104],
+  [168, 116],
+  [178, 122],
+  [164, 126],
+];
+
+// Euler e: (1 + 1/n)^n approaching e.
+const seq = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32].map((n, i) => ({
+  x: 24 + i * 26,
+  v: Math.pow(1 + 1 / n, n),
+}));
+const yOf = (v: number) => 150 - ((v - 1.9) / (2.8 - 1.9)) * 120;
+---
+
+<svg viewBox="0 0 300 160" class="thumb" aria-hidden="true">
+  {
+    slug === "gradient-descent" && (
+      <g>
+        {rings.map((r, i) => (
+          <ellipse cx="160" cy="128" rx={r * 1.7} ry={r} fill="none" stroke="#22D3EE" stroke-opacity={0.55 - i * 0.09} />
+        ))}
+        <polyline points={path.map((p) => p.join(",")).join(" ")} fill="none" stroke="#FFB020" stroke-width="2" stroke-linejoin="round" />
+        {path.map(([x, y]) => (
+          <circle cx={x} cy={y} r="2.5" fill="#FFB020" />
+        ))}
+        <circle cx="160" cy="128" r="4" fill="#C6FF4A" />
+      </g>
+    )
+  }
+  {
+    slug === "eulers-number" && (
+      <g>
+        <line x1="10" x2="290" y1={yOf(Math.E)} y2={yOf(Math.E)} stroke="#C6FF4A" stroke-dasharray="4 4" stroke-opacity="0.8" />
+        <text x="290" y={yOf(Math.E) - 8} fill="#C6FF4A" font-family="monospace" font-size="12" text-anchor="end">
+          e = 2.71828…
+        </text>
+        {seq.map((s) => (
+          <line x1={s.x} x2={s.x} y1="150" y2={yOf(s.v)} stroke="#22D3EE" stroke-opacity="0.35" stroke-width="10" />
+        ))}
+        {seq.map((s) => (
+          <circle cx={s.x} cy={yOf(s.v)} r="3" fill="#FFB020" />
+        ))}
+      </g>
+    )
+  }
+</svg>
+
+<style>
+  .thumb {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #000;
+  }
+</style>

@@ -1,0 +1,21 @@
+---
+import { getCollection, render } from "astro:content";
+import ConceptLayout from "../layouts/ConceptLayout.astro";
+
+export async function getStaticPaths() {
+  const concepts = (await getCollection("concepts", (c) => !c.data.draft)).sort(
+    (a, b) => a.data.order - b.data.order,
+  );
+  return concepts.map((concept, i) => ({
+    params: { slug: concept.id },
+    props: { concept, next: concepts[(i + 1) % concepts.length] },
+  }));
+}
+
+const { concept, next } = Astro.props;
+const { Content } = await render(concept);
+---
+
+<ConceptLayout concept={concept} next={next.id === concept.id ? undefined : next}>
+  <Content />
+</ConceptLayout>

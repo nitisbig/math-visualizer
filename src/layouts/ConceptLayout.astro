@@ -1,0 +1,129 @@
+---
+import type { CollectionEntry } from "astro:content";
+import Base from "./Base.astro";
+import LiteYouTube from "../components/LiteYouTube.astro";
+import { existsSync } from "node:fs";
+
+interface Props {
+  concept: CollectionEntry<"concepts">;
+  next?: CollectionEntry<"concepts">;
+}
+
+const { concept, next } = Astro.props;
+const { title, category, hook, description, videoId, videoTitle } = concept.data;
+// Per-concept share card if one exists in public/og/, else the site card.
+const og = existsSync(`public/og/${concept.id}.png`) ? `/og/${concept.id}.png` : undefined;
+---
+
+<Base title={title} description={description} image={og}>
+  <article class="wrap concept">
+    <header class="intro">
+      <p class="eyebrow">{category}</p>
+      <h1>{title}</h1>
+      <p class="hook">{hook}</p>
+    </header>
+
+    <div class="prose">
+      <slot />
+    </div>
+
+    {
+      videoId && (
+        <section class="video" aria-labelledby="watch">
+          <h2 id="watch">Watch the video</h2>
+          <LiteYouTube id={videoId} title={videoTitle ?? title} />
+        </section>
+      )
+    }
+
+    {
+      next && (
+        <a class="next" href={`/${next.id}/`}>
+          <span class="eyebrow">Next concept</span>
+          <span class="next-title">{next.data.title} →</span>
+        </a>
+      )
+    }
+  </article>
+</Base>
+
+<style>
+  .concept {
+    max-width: 880px;
+  }
+  .intro {
+    padding: 56px 0 8px;
+  }
+  .intro h1 {
+    font-size: clamp(34px, 6vw, 54px);
+    margin: 10px 0 14px;
+  }
+  .hook {
+    font-size: clamp(17px, 2.2vw, 20px);
+    color: var(--muted);
+    max-width: 40em;
+  }
+  .prose :global(h2) {
+    font-size: 24px;
+    margin: 56px 0 14px;
+  }
+  .prose :global(h3) {
+    font-size: 18px;
+    margin: 32px 0 10px;
+  }
+  .prose :global(p),
+  .prose :global(li) {
+    color: #c9ced8;
+  }
+  .prose :global(strong) {
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .prose :global(ol) {
+    counter-reset: step;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1em;
+    display: grid;
+    gap: 12px;
+  }
+  .prose :global(ol > li) {
+    counter-increment: step;
+    position: relative;
+    padding-left: 40px;
+  }
+  .prose :global(ol > li)::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 2px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .video {
+    margin-top: 64px;
+  }
+  .video h2 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+  .next {
+    display: block;
+    margin-top: 48px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    text-decoration: none;
+    transition: border-color 0.2s;
+  }
+  .next:hover {
+    border-color: var(--muted);
+  }
+  .next-title {
+    display: block;
+    margin-top: 6px;
+    font-family: var(--font-display);
+    font-size: 20px;
+  }
+</style>

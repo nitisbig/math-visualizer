@@ -1,0 +1,151 @@
+---
+import "@fontsource/space-grotesk/500.css";
+import "@fontsource/space-grotesk/600.css";
+import "@fontsource/dm-sans/400.css";
+import "@fontsource/dm-sans/500.css";
+import "@fontsource/jetbrains-mono/400.css";
+import "../styles/global.css";
+import { SITE } from "../site.config";
+
+interface Props {
+  title?: string;
+  description?: string;
+  /** Share image path under public/, 1200×630. */
+  image?: string;
+}
+
+const { title, description = SITE.description, image = "/og/site.png" } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(image, Astro.site)} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap bar">
+        <a href="/" class="brand" aria-label={`${SITE.name} home`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" class="mark">
+            <path d="M2 18 C 7 18, 8 6, 12 6 S 17 18, 22 18" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" />
+            <circle cx="12" cy="6" r="2.4" fill="var(--amber)" />
+          </svg>
+          <span>{SITE.name}</span>
+        </a>
+        <nav aria-label="Main">
+          <a href="/#concepts">Concepts</a>
+          <a href={SITE.youtube} rel="noopener" target="_blank">YouTube ↗</a>
+        </nav>
+      </div>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>{SITE.name} · Interactive companion to the videos.</p>
+        <a href={SITE.youtube} rel="noopener" target="_blank">Watch on YouTube ↗</a>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .skip {
+    position: absolute;
+    left: -9999px;
+  }
+  .skip:focus {
+    left: 16px;
+    top: 12px;
+    z-index: 10;
+    background: var(--ink);
+    color: var(--bg);
+    padding: 6px 12px;
+    border-radius: 6px;
+  }
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: rgba(0, 0, 0, 0.82);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--grid);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .mark {
+    width: 22px;
+    height: 22px;
+  }
+  nav {
+    display: flex;
+    gap: 20px;
+    font-size: 14px;
+  }
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  nav a:hover {
+    color: var(--ink);
+  }
+  main {
+    min-height: calc(100vh - 56px - 120px);
+  }
+  .site-footer {
+    border-top: 1px solid var(--grid);
+    margin-top: 96px;
+    padding: 32px 0 48px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .site-footer .wrap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .site-footer p {
+    margin: 0;
+  }
+  .site-footer a {
+    color: var(--muted);
+    text-decoration: none;
+  }
+  .site-footer a:hover {
+    color: var(--ink);
+  }
+</style>

@@ -1,0 +1,90 @@
+---
+// Thumbnail facade: the YouTube iframe (~1 MB of JS) only loads on click.
+interface Props {
+  id: string;
+  title: string;
+}
+const { id, title } = Astro.props;
+---
+
+<div class="yt" data-id={id} data-title={title}>
+  <button type="button" aria-label={`Play video: ${title}`}>
+    <img src={`https://i.ytimg.com/vi/${id}/hqdefault.jpg`} alt="" loading="lazy" decoding="async" width="480" height="360" />
+    <span class="play" aria-hidden="true">
+      <svg viewBox="0 0 16 16"><path d="M5 3v10l8-5z" /></svg>
+    </span>
+  </button>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>(".yt").forEach((el) => {
+    el.querySelector("button")?.addEventListener(
+      "click",
+      () => {
+        const iframe = document.createElement("iframe");
+        iframe.src = `https://www.youtube-nocookie.com/embed/${el.dataset.id}?autoplay=1&rel=0`;
+        iframe.title = el.dataset.title ?? "YouTube video";
+        iframe.allow = "accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture";
+        iframe.allowFullscreen = true;
+        el.replaceChildren(iframe);
+      },
+      { once: true },
+    );
+  });
+</script>
+
+<style>
+  .yt {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--card);
+  }
+  .yt button {
+    all: unset;
+    position: absolute;
+    inset: 0;
+    cursor: pointer;
+  }
+  .yt button:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: -2px;
+  }
+  .yt img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.85;
+    transition: opacity 0.3s;
+  }
+  .yt button:hover img {
+    opacity: 1;
+  }
+  .play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 64px;
+    height: 64px;
+    margin: -32px 0 0 -32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--ink);
+    display: grid;
+    place-items: center;
+  }
+  .play svg {
+    width: 22px;
+    fill: var(--ink);
+    margin-left: 3px;
+  }
+  .yt :global(iframe) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+</style>

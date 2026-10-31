@@ -1,0 +1,295 @@
+/* Shared look for every interactive widget (React islands). */
+.viz {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  overflow: hidden;
+  margin: 28px 0;
+  /* Skip layout/paint until near the viewport; the size hint avoids scroll jumps. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
+}
+
+.viz-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--grid);
+}
+
+.viz-title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.stage {
+  display: block;
+  width: 100%;
+  background: var(--bg);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.stage.ar-wide { aspect-ratio: 2 / 1; }
+.stage.ar-map { aspect-ratio: 16 / 10; }
+@media (max-width: 640px) {
+  .stage.ar-wide { aspect-ratio: 4 / 3; }
+  .stage.ar-map { aspect-ratio: 1 / 1; }
+}
+
+.stage.grab { cursor: grab; }
+.stage.grabbing { cursor: grabbing; }
+
+.viz-body {
+  display: grid;
+  gap: 16px;
+  padding: 16px;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px 24px;
+  align-items: end;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.status {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ---- Slider ---- */
+.slider label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.slider output {
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  margin: 0;
+  cursor: pointer;
+}
+
+.slider input[type="range"]::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--line);
+  border-radius: 1px;
+}
+.slider input[type="range"]::-moz-range-track {
+  height: 2px;
+  background: var(--line);
+}
+
+.slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -7px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+.slider input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* ---- Buttons ---- */
+.buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: 500 13px var(--font-body);
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease-out), background 0.2s var(--ease-out);
+}
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn svg { width: 12px; height: 12px; fill: currentColor; }
+.btn.primary { border-color: var(--ink); }
+.btn.primary:hover { background: rgba(245, 247, 250, 0.08); }
+
+/* ---- Segmented ---- */
+.segmented {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.segmented legend {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  padding: 0;
+}
+.seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.seg label {
+  position: relative;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+.seg label.on {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.seg input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.seg label:has(input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ---- Toggle ---- */
+.toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  min-height: 36px;
+}
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.toggle .track {
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  position: relative;
+  transition: border-color 0.2s;
+}
+.toggle .track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.25s var(--ease-out), background 0.2s;
+}
+.toggle input:checked + .track { border-color: var(--ink); }
+.toggle input:checked + .track::after { transform: translateX(14px); background: var(--ink); }
+.toggle input:focus-visible + .track { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* ---- Readout ---- */
+.readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  margin: 0;
+}
+.readout div { min-width: 64px; }
+.readout dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.readout dd {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* ---- e digits (Euler page) ---- */
+.edigits {
+  font-size: clamp(28px, 6vw, 44px);
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+}
+.edigits .hit {
+  color: var(--lime);
+  text-shadow: 0 0 18px rgba(198, 255, 74, 0.45);
+}
+.edigits .miss { color: var(--amber); }
+.edigits .ref {
+  margin-top: 6px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* ---- Legend ---- */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend .swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}

@@ -1,0 +1,46 @@
+---
+// KaTeX rendered at build time: static HTML, no math JS in the browser.
+import katex from "katex";
+import "katex/dist/katex.min.css";
+
+interface Props {
+  tex: string;
+  /** Short caption under the equation. */
+  caption?: string;
+  inline?: boolean;
+}
+
+const { tex, caption, inline = false } = Astro.props;
+const html = katex.renderToString(tex, { displayMode: !inline, throwOnError: false, trust: true, strict: false });
+---
+
+{
+  inline ? (
+    <span class="eq-inline" set:html={html} />
+  ) : (
+    <figure class="eq">
+      <div set:html={html} />
+      {caption && <figcaption>{caption}</figcaption>}
+    </figure>
+  )
+}
+
+<style>
+  .eq {
+    margin: 28px 0;
+    padding: 20px 16px;
+    border-top: 1px solid var(--grid);
+    border-bottom: 1px solid var(--grid);
+    overflow-x: auto;
+    font-size: 1.1em;
+  }
+  .eq :global(.katex-display) {
+    margin: 0;
+  }
+  figcaption {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--muted);
+  }
+</style>

@@ -1,0 +1,43 @@
+---
+title: "Euler’s Number e"
+category: Math
+hook: "Why 2.71828… shows up in money, growth, calculus and rotation."
+description: "Compound interest faster and faster, find the one function that is its own slope, and spin e^iθ around the unit circle to reach Euler’s identity."
+videoId: HBScu6dxNFM
+videoTitle: "Why e Is Everywhere | Euler’s Number Explained"
+order: 2
+---
+
+import Equation from "../../components/Equation.astro";
+import Compound from "../../visualizers/euler-e/Compound";
+import OwnDerivative from "../../visualizers/euler-e/OwnDerivative";
+import EulerCircle from "../../visualizers/euler-e/EulerCircle";
+
+<Compound client:visible />
+
+## What you’re seeing
+
+1. A bank pays **100% interest** a year. Paid once, $1 becomes $2.
+2. Split the interest into n smaller payments that each earn interest too, and the <span class="c-cyan">balance</span> climbs in more, smaller jumps.
+3. More compounding always helps, but less and less each time. The <span class="c-amber">final amount</span> never passes a ceiling.
+4. That ceiling is <span class="c-lime">e = 2.71828…</span>: the most continuous growth can ever give you.
+
+<Equation tex={String.raw`e = \lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^{n}`} />
+
+## Why e and not 2 or 3?
+
+Every exponential aˣ has a slope that is proportional to its height. Only one base makes that proportion exactly **1**.
+
+<OwnDerivative client:visible />
+
+<Equation tex={String.raw`\frac{d}{dx}\,a^x = (\ln a)\,a^x \quad\Longrightarrow\quad \frac{d}{dx}\,e^x = e^x`} caption="At a = e, the slope is the height." />
+
+## e meets i
+
+Put an imaginary number in the exponent and growth turns into **rotation**. The rate of change of e^iθ is i · e^iθ: always the same size as the point, but turned a quarter-turn. So the point never moves outward. It travels around the unit circle.
+
+<EulerCircle client:visible />
+
+<Equation tex={String.raw`e^{i\theta} = \cos\theta + i\sin\theta \qquad\Longrightarrow\qquad e^{i\pi} + 1 = 0`} caption="Euler’s identity: five fundamental constants in one line." />
+
+Turn on **(1 + iθ/n)ⁿ** to see this as compound interest again. Each step adds a small sideways nudge, and as n grows the polygon wraps onto the circle exactly.

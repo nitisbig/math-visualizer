@@ -1,0 +1,30 @@
+/* Design tokens — mirrored from the video theme files (theme.py).
+   Semantic colors keep one meaning per page; see each page's legend. */
+:root {
+  --bg: #000000;
+  --card: #05070a;
+  --ink: #f5f7fa;
+  --muted: #7c8597;
+  --grid: #1a1f2b;
+  --line: #2a3140;
+  --axis: #3a4252;
+
+  --cyan: #22d3ee;
+  --amber: #ffb020;
+  --magenta: #ff3d9a;
+  --lime: #c6ff4a;
+  --blue: #5fb6ff;
+  --alert: #ff4d4d;
+
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius: 12px;
+  --gutter: 16px;
+  --max: 1080px;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.3, 0, 1, 1);
+
+  color-scheme: dark;
+}
