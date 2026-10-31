@@ -12,7 +12,7 @@ import Equation from "../../components/Equation.astro";
 import Descent1D from "../../visualizers/gradient-descent/Descent1D";
 import Descent2D from "../../visualizers/gradient-descent/Descent2D";
 
-<Descent1D client:visible>
+<Descent1D client:load>
 <div slot="explain">
 
 1. The <span class="c-cyan">curve</span> is the **loss**: how wrong the model is for each setting of x.

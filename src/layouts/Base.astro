@@ -15,17 +15,25 @@ interface Props {
   image?: string;
   /** Concept pages: on phones the top bar becomes an app bar (back + this title). */
   appTitle?: string;
+  /** Concept pages: open on a bare full-screen canvas until "Reveal everything". */
+  focus?: boolean;
 }
 
-const { title, description = SITE.description, image = "/og/site.png", appTitle } = Astro.props;
+const { title, description = SITE.description, image = "/og/site.png", appTitle, focus = false } = Astro.props;
 const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-focus={focus ? "" : undefined}>
   <head>
     <meta charset="utf-8" />
+    {
+      focus && (
+        // Before first paint: deep links (#section) skip the focus view.
+        <script is:inline>if (location.hash) delete document.documentElement.dataset.focus;</script>
+      )
+    }
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
     <title>{fullTitle}</title>
@@ -187,6 +195,15 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   }
   .site-footer a:hover {
     color: var(--ink);
+  }
+
+  /* Focus view: no site chrome, no page scroll. */
+  :global(html[data-focus]) .site-header,
+  :global(html[data-focus]) .site-footer {
+    display: none;
+  }
+  :global(html[data-focus]) body {
+    overflow: hidden;
   }
 
   /* Phones on a concept page: app bar + no footer (the tab bar takes the bottom). */

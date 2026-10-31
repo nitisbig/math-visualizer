@@ -18,7 +18,24 @@ const body = await Astro.slots.render("default");
 const app = body.includes("data-workspace");
 ---
 
-<Base title={title} description={description} image={og} appTitle={app ? title : undefined}>
+<Base title={title} description={description} image={og} appTitle={app ? title : undefined} focus={app}>
+  {
+    app && (
+      <div class="focus-bar">
+        <a href="/" class="focus-home" aria-label="All concepts">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M2 18 C 7 18, 8 6, 12 6 S 17 18, 22 18" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" />
+            <circle cx="12" cy="6" r="2.4" fill="var(--amber)" />
+          </svg>
+        </a>
+        <h1 class="focus-title">{title}</h1>
+        <button type="button" class="reveal" data-reveal>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1.2" /><rect x="9" y="2.5" width="4.5" height="4.5" rx="1.2" /><rect x="2.5" y="9" width="4.5" height="4.5" rx="1.2" /><rect x="9" y="9" width="4.5" height="4.5" rx="1.2" /></svg>
+          Reveal everything
+        </button>
+      </div>
+    )
+  }
   <div class="wrap concept">
     <aside class="rail" aria-label="On this page">
       <a href="#intro" class="rail-top">{title}</a>
@@ -41,6 +58,14 @@ const app = body.includes("data-workspace");
                 <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6c0 .5.6.8 1 .5l7.4-4.8a.6.6 0 0 0 0-1L6 2.7c-.4-.3-1 0-1 .5z" /></svg>
                 Watch the video
               </a>
+            )
+          }
+          {
+            app && (
+              <button type="button" class="watch" data-focus-btn>
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 6V3.5a1 1 0 0 1 1-1H6M10 2.5h2.5a1 1 0 0 1 1 1V6M13.5 10v2.5a1 1 0 0 1-1 1H10M6 13.5H3.5a1 1 0 0 1-1-1V10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+                Focus mode
+              </button>
             )
           }
         </div>
@@ -146,7 +171,29 @@ const app = body.includes("data-workspace");
   const fromHash = () => decodeURIComponent(location.hash.slice(1));
   const app = panes.hasAttribute("data-app");
   if (app && phone.matches && fromHash()) show(fromHash(), false);
-  window.addEventListener("hashchange", () => app && phone.matches && show(fromHash(), false));
+  window.addEventListener("hashchange", () => {
+    if (fromHash()) setFocus(false, false);
+    if (app && phone.matches) show(fromHash(), false);
+  });
+
+  // Focus view: the first canvas alone, full screen. Reveal morphs it back into its slot.
+  const root = document.documentElement;
+  function setFocus(on: boolean, animate = true) {
+    if (on === root.hasAttribute("data-focus")) return;
+    const first = workspaces[0];
+    const apply = () => {
+      if (on) root.dataset.focus = "";
+      else delete root.dataset.focus;
+      if (on || !first) window.scrollTo(0, 0);
+      else if (app && phone.matches) show(first.id, false);
+      else first.scrollIntoView({ block: "start" });
+    };
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (animate && !reduce && document.startViewTransition) document.startViewTransition(apply);
+    else apply();
+  }
+  document.querySelector("[data-reveal]")?.addEventListener("click", () => setFocus(false));
+  document.querySelector("[data-focus-btn]")?.addEventListener("click", () => setFocus(true));
 
   // Desktop scroll-spy for the rail.
   const links = new Map([...rail.querySelectorAll<HTMLAnchorElement>("a")].map((a) => [a.hash.slice(1), a]));
@@ -441,6 +488,207 @@ const app = body.includes("data-workspace");
       background: var(--ink);
       border-color: var(--ink);
       color: var(--bg);
+    }
+  }
+</style>
+
+<style is:global>
+  /* ================= Focus view =================
+     First visit: the first workspace's canvas fills the screen with only the
+     title, its transport and "Reveal everything". Toggled by html[data-focus]. */
+  .focus-bar {
+    display: none;
+  }
+  html[data-focus] .focus-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) var(--gutter) 28px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent);
+    pointer-events: none;
+    animation: focus-in 0.5s var(--ease-out) both;
+  }
+  .focus-bar > * {
+    pointer-events: auto;
+  }
+  .focus-home {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    margin-left: -6px;
+    border-radius: 50%;
+    transition: background 0.2s;
+  }
+  .focus-home:hover {
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .focus-home svg {
+    width: 20px;
+    height: 20px;
+  }
+  .focus-title {
+    min-width: 0;
+    margin-right: auto;
+    font-size: 17px;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .reveal {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 16px 0 13px;
+    border: 1px solid var(--hair-2);
+    border-radius: 999px;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    color: var(--ink);
+    font: 500 13px var(--font-body);
+    cursor: pointer;
+    transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+  }
+  .reveal svg {
+    width: 13px;
+    height: 13px;
+    fill: currentColor;
+    opacity: 0.8;
+  }
+  .reveal:hover {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--bg);
+  }
+
+  html[data-focus] .rail,
+  html[data-focus] .intro,
+  html[data-focus] .outro,
+  html[data-focus] .tabbar,
+  html[data-focus] .panes > :not(astro-island:first-of-type) {
+    display: none !important;
+  }
+  /* Beats the phone rule that shows only the active pane. */
+  html[data-focus] .panes > astro-island:first-of-type {
+    display: contents !important;
+  }
+
+  html[data-focus] .panes > astro-island:first-of-type .ws {
+    --peek: 0px;
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    display: block;
+    height: 100svh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--bg);
+  }
+  html[data-focus] .panes > astro-island:first-of-type :is(.ws-panel, .ws-status, .ws-coach) {
+    display: none;
+  }
+  html[data-focus] .panes > astro-island:first-of-type .ws-stage {
+    position: absolute;
+    inset: 0;
+    height: auto;
+  }
+
+  /* Transport: centred, icon-only, round. */
+  html[data-focus] .ws-transport {
+    left: 50%;
+    right: auto;
+    bottom: calc(24px + var(--safe-b));
+    transform: translateX(-50%);
+    animation: focus-in 0.5s 0.1s var(--ease-out) both;
+  }
+  html[data-focus] .ws-transport .transport {
+    flex-direction: row;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  html[data-focus] .ws-transport .tlabel {
+    display: none;
+  }
+  html[data-focus] .ws-transport .tbtn {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 1px solid var(--hair-2);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  html[data-focus] .ws-transport .tbtn.play {
+    order: 1;
+    width: 54px;
+    height: 54px;
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--bg);
+    box-shadow: 0 8px 28px -8px rgba(0, 0, 0, 0.9);
+  }
+  html[data-focus] .ws-transport .tbtn.play svg {
+    width: 18px;
+    height: 18px;
+  }
+  html[data-focus] .ws-transport .tbtn[aria-label="Step"] {
+    order: 2;
+  }
+
+  /* Reveal / focus morph (View Transitions, where supported). */
+  .panes > astro-island:first-of-type .ws-stage {
+    view-transition-name: focus-stage;
+  }
+  ::view-transition-group(focus-stage) {
+    animation-duration: 0.55s;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.35s;
+  }
+
+  @keyframes focus-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @media (max-width: 767px) {
+    html[data-focus] .focus-bar {
+      gap: 8px;
+      padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    }
+    .focus-title {
+      font-size: 15px;
+    }
+    .reveal {
+      height: 40px;
+      padding: 0 14px 0 12px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html[data-focus] .focus-bar,
+    html[data-focus] .ws-transport {
+      animation: none;
     }
   }
 </style>
