@@ -15,25 +15,17 @@ interface Props {
   image?: string;
   /** Concept pages: on phones the top bar becomes an app bar (back + this title). */
   appTitle?: string;
-  /** Concept pages: open on a bare full-screen canvas until "Reveal everything". */
-  focus?: boolean;
 }
 
-const { title, description = SITE.description, image = "/og/site.png", appTitle, focus = false } = Astro.props;
+const { title, description = SITE.description, image = "/og/site.png", appTitle } = Astro.props;
 const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
 
 <!doctype html>
-<html lang="en" data-focus={focus ? "" : undefined}>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    {
-      focus && (
-        // Before first paint: deep links (#section) skip the focus view.
-        <script is:inline>if (location.hash) delete document.documentElement.dataset.focus;</script>
-      )
-    }
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
     <title>{fullTitle}</title>

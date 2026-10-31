@@ -18,7 +18,7 @@ const body = await Astro.slots.render("default");
 const app = body.includes("data-workspace");
 ---
 
-<Base title={title} description={description} image={og} appTitle={app ? title : undefined} focus={app}>
+<Base title={title} description={description} image={og} appTitle={app ? title : undefined}>
   {
     app && (
       <div class="focus-bar">
@@ -176,7 +176,7 @@ const app = body.includes("data-workspace");
     if (app && phone.matches) show(fromHash(), false);
   });
 
-  // Focus view: the first canvas alone, full screen. Reveal morphs it back into its slot.
+  // Focus view (opt-in): the first canvas alone, full screen. Reveal morphs it back into its slot.
   const root = document.documentElement;
   function setFocus(on: boolean, animate = true) {
     if (on === root.hasAttribute("data-focus")) return;
@@ -194,6 +194,7 @@ const app = body.includes("data-workspace");
   }
   document.querySelector("[data-reveal]")?.addEventListener("click", () => setFocus(false));
   document.querySelector("[data-focus-btn]")?.addEventListener("click", () => setFocus(true));
+  document.addEventListener("keydown", (e) => e.key === "Escape" && setFocus(false));
 
   // Desktop scroll-spy for the rail.
   const links = new Map([...rail.querySelectorAll<HTMLAnchorElement>("a")].map((a) => [a.hash.slice(1), a]));
@@ -494,7 +495,7 @@ const app = body.includes("data-workspace");
 
 <style is:global>
   /* ================= Focus view =================
-     First visit: the first workspace's canvas fills the screen with only the
+     Opened from "Focus mode": the first workspace's canvas fills the screen with only the
      title, its transport and "Reveal everything". Toggled by html[data-focus]. */
   .focus-bar {
     display: none;
