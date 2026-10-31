@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { dotGrid, prefersReducedMotion, useCanvas, useRaf } from "../../lib/canvas";
 import { fmt } from "../../lib/format";
 import { C, FONT_MONO, alpha } from "../../lib/theme";
 import { bool, useUrlNumber, useUrlState } from "../../lib/urlState";
-import Legend from "../../components/ui/Legend";
-import Readout from "../../components/ui/Readout";
 import Slider from "../../components/ui/Slider";
 import Toggle from "../../components/ui/Toggle";
+import Workspace from "../../components/ui/Workspace";
+import { buildInsight } from "./insights";
 import { AXES, NAMES, buildStage, camera, faces, hypercube, perspective } from "./math";
 import { AXIS_COLORS, AXIS_TOKENS, colorText, drawWire, glowDot, useOrbit } from "./view";
 
@@ -31,7 +31,7 @@ function baseOrbit(u: number) {
   return { yaw: -0.6 * s, pitch: (Math.PI / 2) * (1 - s) + 0.42 * s };
 }
 
-export default function Build() {
+export default function Build({ explain }: { explain?: ReactNode }) {
   const [u, setU] = useUrlNumber("dim", 3, 0, 4);
   const [bits, setBits] = useUrlState("bits", false, bool);
   const [tween, setTween] = useState<Tween | null>(null);
@@ -40,24 +40,13 @@ export default function Build() {
   const stage = buildStage(u);
   const { k, f } = stage;
 
-  useRaf((dt) => {
-    if (!tween) return;
-    const span = tween.to - tween.from;
-    const t = Math.min(1, tween.t + dt / (DRAG_SECONDS * span));
-    // One eased drag per unit, so a full replay reads as four separate moves.
-    const raw = tween.from + span * t;
-    const next = span > 1 && raw < tween.to ? Math.floor(raw) + ease(raw % 1) : tween.from + span * ease(t);
-    setU(next);
-    setTween(t >= 1 ? null : { ...tween, t });
-  }, tween !== null);
-
   const animate = (from: number, to: number) => {
     if (prefersReducedMotion() || to <= from) return setU(to);
     setTween({ from, to, t: 0 });
   };
   const nextDim = Math.min(4, Math.floor(u + 1e-9) + 1);
 
-  const { ref } = useCanvas(
+  const { ref, visible } = useCanvas(
     (ctx, size) => {
       const { w, h } = size;
       const base = baseOrbit(u);
@@ -99,39 +88,62 @@ export default function Build() {
         });
       }
 
-      ctx.font = `13px ${FONT_MONO}`;
-      ctx.textBaseline = "top";
-      if (f > 0) {
-        colorText(ctx, [[`${NAMES[k]} → ${NAMES[k + 1]}`, C.ink]], 16, 14);
-        colorText(ctx, [["dragging along ", C.muted], [AXES[k], AXIS_COLORS[k]]], 16, 34);
-      } else {
-        colorText(ctx, [[NAMES[k], C.ink]], 16, 14);
-        if (k === 4) colorText(ctx, [["a hypercube", C.muted]], 16, 34);
-      }
     },
     [u, bits, offset],
   );
 
+  useRaf((dt) => {
+    if (!tween) return;
+    const span = tween.to - tween.from;
+    const t = Math.min(1, tween.t + dt / (DRAG_SECONDS * span));
+    // One eased drag per unit, so a full replay reads as four separate moves.
+    const raw = tween.from + span * t;
+    const next = span > 1 && raw < tween.to ? Math.floor(raw) + ease(raw % 1) : tween.from + span * ease(t);
+    setU(next);
+    setTween(t >= 1 ? null : { ...tween, t });
+  }, tween !== null, visible);
+
+
   const n = k; // the finished shape
   const c = COUNTS[n];
-  const prev = n > 0 ? COUNTS[n - 1] : null;
+
+  const replay = () => {
+    setU(0);
+    animate(0, 4);
+  };
+  const cap = (t: string) => t[0].toUpperCase() + t.slice(1);
 
   return (
-    <div className="viz">
-      <div className="viz-head">
-        <span className="viz-title">Build a tesseract, one drag at a time</span>
-        <Legend items={AXES.map((a, i) => ({ color: AXIS_TOKENS[i], label: `${a} edges` }))} />
-      </div>
-      <canvas
-        ref={ref}
-        className={`stage ar-wide ${dragging ? "grabbing" : "grab"}`}
-        {...handlers}
-        role="img"
-        aria-label={`A ${NAMES[k]}${f > 0 ? ` being dragged along ${AXES[k]} into a ${NAMES[k + 1]}` : ""}, shown in perspective.`}
-      />
-      <div className="viz-body">
-        <p className="hint">Drag the shape along the next axis. Drag the picture to turn it.</p>
-        <div className="controls">
+    <Workspace
+      title="Build a tesseract, one drag at a time"
+      tab="Build"
+      legend={AXES.map((a, i) => ({ color: AXIS_TOKENS[i], label: `${a} edges` }))}
+      stage={
+        <canvas
+          ref={ref}
+          className={`stage ${dragging ? "grabbing" : "grab"}`}
+          {...handlers}
+          role="img"
+          aria-label={`A ${NAMES[k]}${f > 0 ? ` being dragged along ${AXES[k]} into a ${NAMES[k + 1]}` : ""}, shown in perspective.`}
+        />
+      }
+      status={
+        f > 0
+          ? { text: `${cap(NAMES[k])} → ${NAMES[k + 1]} · along ${AXES[k]}`, color: AXIS_COLORS[k] }
+          : { text: cap(NAMES[k]), color: C.ink }
+      }
+      coach="Drag the picture to turn it"
+      transport={{
+        playing: tween !== null,
+        playLabel: u >= 4 ? "Replay" : `Drag along ${AXES[nextDim - 1]}`,
+        onPlay: () => (tween ? setTween(null) : u >= 4 ? replay() : animate(u, nextDim)),
+        onReset: () => {
+          setTween(null);
+          setU(0);
+        },
+      }}
+      controls={
+        <>
           <Slider
             label="Dimensions built"
             value={u}
@@ -145,42 +157,34 @@ export default function Build() {
             format={(v) => fmt(v, 2)}
             color={AXIS_TOKENS[Math.min(3, k)]}
           />
-          <div className="ctl buttons">
-            <button
-              type="button"
-              className="btn primary"
-              disabled={u >= 4 || tween !== null}
-              onClick={() => animate(u, nextDim)}
-            >
-              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" /></svg>
-              {u >= 4 ? "Done: 4D" : `Drag along ${AXES[nextDim - 1]}`}
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => {
-                setU(0);
-                animate(0, 4);
-              }}
-            >
-              Replay from a point
-            </button>
-          </div>
-        </div>
-        <div className="controls">
           <Toggle label="Corner coordinates" checked={bits} onChange={setBits} />
-        </div>
-        <Readout
-          items={[
-            { label: "corners 2ⁿ", value: String(c.V) },
-            { label: "edges", value: String(c.E) },
-            { label: "edge rule 2E + V", value: prev ? `2 × ${prev.E} + ${prev.V} = ${c.E}` : "—" },
-            { label: "squares", value: String(c.F) },
-            { label: "cubes", value: String(c.C) },
-            { label: "long diagonal √n", value: n > 0 ? `√${n} = ${fmt(Math.sqrt(n), 3)}` : "—" },
-          ]}
-        />
-      </div>
-    </div>
+        </>
+      }
+      stats={[
+        { label: "corners 2ⁿ", value: String(c.V) },
+        { label: "edges", value: String(c.E) },
+        { label: n >= 3 ? "cubes" : "squares", value: String(n >= 3 ? c.C : c.F) },
+      ]}
+      insight={buildInsight(k, f, COUNTS)}
+      tries={[
+        { label: "Replay from a point", apply: replay },
+        {
+          label: "Corner coordinates",
+          apply: () => {
+            setTween(null);
+            setU(4);
+            setBits(true);
+          },
+        },
+        {
+          label: "Stop at a cube",
+          apply: () => {
+            setTween(null);
+            setU(3);
+          },
+        },
+      ]}
+      explain={explain}
+    />
   );
 }

@@ -14,17 +14,17 @@ const counts = Object.fromEntries(CATEGORIES.map((c) => [c, concepts.filter((x) 
   <section class="wrap hero">
     <p class="eyebrow">Interactive math</p>
     <h1>Don’t just watch it.<br /><span>Play with it.</span></h1>
-    <p class="lede">{SITE.description}</p>
+    <p class="lede">{SITE.tagline}</p>
   </section>
 
   <section class="wrap" id="concepts" aria-labelledby="concepts-h">
     <div class="list-head">
-      <h2 id="concepts-h">Concepts</h2>
+      <h2 id="concepts-h">Concepts <span class="count">{concepts.length}</span></h2>
       <div class="chips" role="group" aria-label="Filter by field">
         <button type="button" class="chip on" data-filter="all" aria-pressed="true">All</button>
         {
-          CATEGORIES.map((c) => (
-            <button type="button" class="chip" data-filter={c} aria-pressed="false" disabled={counts[c] === 0}>
+          CATEGORIES.filter((c) => counts[c] > 0).map((c) => (
+            <button type="button" class="chip" data-filter={c} aria-pressed="false">
               {c}
             </button>
           ))
@@ -34,15 +34,23 @@ const counts = Object.fromEntries(CATEGORIES.map((c) => [c, concepts.filter((x) 
 
     <ul class="grid">
       {
-        concepts.map((c) => (
+        concepts.map((c, i) => (
           <li data-category={c.data.category}>
             <a href={`/${c.id}/`} class="card">
-              <Thumb slug={c.id} />
-              <div class="card-body">
-                <span class="eyebrow">{c.data.category}</span>
-                <h3>{c.data.title}</h3>
-                <p>{c.data.description}</p>
+              <div class="thumb-wrap">
+                <Thumb slug={c.id} />
               </div>
+              <div class="card-body">
+                <span class="meta">
+                  <span class="num">{String(i + 1).padStart(2, "0")}</span>
+                  {c.data.category}
+                </span>
+                <h3>{c.data.title}</h3>
+                <p>{c.data.hook}</p>
+              </div>
+              <span class="go" aria-hidden="true">
+                <svg viewBox="0 0 16 16"><path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              </span>
             </a>
           </li>
         ))
@@ -68,22 +76,30 @@ const counts = Object.fromEntries(CATEGORIES.map((c) => [c, concepts.filter((x) 
 </script>
 
 <style>
+  .hero,
+  #concepts {
+    max-width: var(--max-wide);
+  }
   .hero {
-    padding: 88px var(--gutter) 64px;
+    padding: 96px var(--gutter) 72px;
   }
   .hero h1 {
-    font-size: clamp(40px, 8vw, 76px);
-    letter-spacing: -0.03em;
-    margin: 14px 0 20px;
+    margin: 16px 0 20px;
+    font-size: clamp(42px, 7.5vw, 84px);
+    letter-spacing: -0.035em;
+    line-height: 1.02;
   }
   .hero h1 span {
-    color: var(--cyan);
-    text-shadow: 0 0 24px rgba(34, 211, 238, 0.35);
+    background: linear-gradient(90deg, var(--cyan), var(--blue));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
   .lede {
-    font-size: clamp(17px, 2.2vw, 20px);
+    max-width: 30em;
+    margin: 0;
+    font-size: clamp(17px, 2vw, 20px);
     color: var(--muted);
-    max-width: 34em;
   }
   .list-head {
     display: flex;
@@ -94,68 +110,180 @@ const counts = Object.fromEntries(CATEGORIES.map((c) => [c, concepts.filter((x) 
     margin-bottom: 20px;
   }
   .list-head h2 {
-    font-size: 22px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: 500;
+  }
+  .count {
+    font: 400 12px var(--font-mono);
+    color: var(--muted);
   }
   .chips {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--hair);
+    border-radius: 999px;
+    background: var(--s1);
   }
   .chip {
     padding: 6px 14px;
-    border: 1px solid var(--line);
+    border: 0;
     border-radius: 999px;
     background: none;
     color: var(--muted);
     font: 500 13px var(--font-body);
     cursor: pointer;
+    transition: color 0.2s, background 0.2s;
+  }
+  .chip:hover {
+    color: var(--ink-2);
   }
   .chip.on {
     color: var(--ink);
-    border-color: var(--ink);
-  }
-  .chip:disabled {
-    opacity: 0.35;
-    cursor: default;
+    background: var(--s3);
   }
   .grid {
-    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
     margin: 0;
     padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
+    list-style: none;
   }
   .card {
-    display: block;
+    position: relative;
+    display: flex;
+    flex-direction: column;
     height: 100%;
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    overflow: hidden;
+    border: 1px solid var(--hair-2);
+    border-radius: var(--r-lg);
+    background: var(--s1);
     text-decoration: none;
-    background: var(--card);
-    transition: border-color 0.25s var(--ease-out), transform 0.25s var(--ease-out);
+    overflow: hidden;
+    transition: border-color 0.3s var(--ease-out), transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
   }
   .card:hover {
-    border-color: var(--muted);
-    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+  }
+  .thumb-wrap {
+    background: radial-gradient(120% 100% at 50% 0%, #0b1018, #000 70%);
+    border-bottom: 1px solid var(--hair);
   }
   .card-body {
-    padding: 16px 18px 20px;
-    border-top: 1px solid var(--grid);
+    padding: 18px 20px 22px;
+  }
+  .meta {
+    display: flex;
+    gap: 10px;
+    font: 400 11px var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .num {
+    color: var(--ink-2);
   }
   .card h3 {
-    font-size: 20px;
-    margin: 6px 0 8px;
+    margin: 10px 0 8px;
+    font-size: 21px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
   .card p {
     margin: 0;
     font-size: 14px;
+    line-height: 1.5;
     color: var(--muted);
+  }
+  .go {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--hair-2);
+    border-radius: 50%;
+    background: var(--glass);
+    color: var(--ink);
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.25s, transform 0.25s var(--ease-out);
+  }
+  .go svg {
+    width: 14px;
+    height: 14px;
+  }
+  .card:hover .go {
+    opacity: 1;
+    transform: none;
   }
   .more {
     margin-top: 28px;
-    font-size: 14px;
+    font-size: 13px;
     color: var(--muted);
+  }
+
+  /* Phones: an app-style list */
+  @media (max-width: 640px) {
+    .hero {
+      padding: 48px var(--gutter) 40px;
+    }
+    .chips {
+      overflow-x: auto;
+      max-width: 100%;
+    }
+    .grid {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+    .card {
+      flex-direction: row;
+      align-items: center;
+      border-radius: var(--r-md);
+    }
+    .thumb-wrap {
+      flex: none;
+      width: 112px;
+      align-self: stretch;
+      display: grid;
+      place-items: center;
+      border-bottom: 0;
+      border-right: 1px solid var(--hair);
+    }
+    .card-body {
+      min-width: 0;
+      padding: 14px 40px 14px 16px;
+    }
+    .card h3 {
+      margin: 6px 0 4px;
+      font-size: 17px;
+    }
+    .card p {
+      font-size: 13px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .go {
+      top: 50%;
+      right: 12px;
+      margin-top: -16px;
+      opacity: 1;
+      transform: none;
+      border: 0;
+      background: none;
+      color: var(--muted);
+    }
+    .card:hover {
+      transform: none;
+    }
   }
 </style>

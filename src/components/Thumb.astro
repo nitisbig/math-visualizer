@@ -41,11 +41,11 @@ const tessEdges = [...TESSERACT.edges].sort(
         {rings.map((r, i) => (
           <ellipse cx="160" cy="128" rx={r * 1.7} ry={r} fill="none" stroke="#22D3EE" stroke-opacity={0.55 - i * 0.09} />
         ))}
-        <polyline points={path.map((p) => p.join(",")).join(" ")} fill="none" stroke="#FFB020" stroke-width="2" stroke-linejoin="round" />
-        {path.map(([x, y]) => (
-          <circle cx={x} cy={y} r="2.5" fill="#FFB020" />
+        <polyline class="draw" pathLength="1" points={path.map((p) => p.join(",")).join(" ")} fill="none" stroke="#FFB020" stroke-width="2" stroke-linejoin="round" />
+        {path.map(([x, y], i) => (
+          <circle class="pop" style={`animation-delay:${0.2 + i * 0.18}s`} cx={x} cy={y} r="2.5" fill="#FFB020" />
         ))}
-        <circle cx="160" cy="128" r="4" fill="#C6FF4A" />
+        <circle class="pulse" cx="160" cy="128" r="4" fill="#C6FF4A" />
       </g>
     )
   }
@@ -56,18 +56,18 @@ const tessEdges = [...TESSERACT.edges].sort(
         <text x="290" y={yOf(Math.E) - 8} fill="#C6FF4A" font-family="monospace" font-size="12" text-anchor="end">
           e = 2.71828…
         </text>
-        {seq.map((s) => (
-          <line x1={s.x} x2={s.x} y1="150" y2={yOf(s.v)} stroke="#22D3EE" stroke-opacity="0.35" stroke-width="10" />
+        {seq.map((s, i) => (
+          <line class="grow" style={`animation-delay:${i * 0.07}s`} x1={s.x} x2={s.x} y1="150" y2={yOf(s.v)} stroke="#22D3EE" stroke-opacity="0.35" stroke-width="10" />
         ))}
-        {seq.map((s) => (
-          <circle cx={s.x} cy={yOf(s.v)} r="3" fill="#FFB020" />
+        {seq.map((s, i) => (
+          <circle class="pop" style={`animation-delay:${0.3 + i * 0.07}s`} cx={s.x} cy={yOf(s.v)} r="3" fill="#FFB020" />
         ))}
       </g>
     )
   }
   {
     slug === "fourth-dimension" && (
-      <g stroke-width="1.6" stroke-linecap="round">
+      <g class="spin" stroke-width="1.6" stroke-linecap="round">
         {tessEdges.map((e) => (
           <line
             x1={tess[e.a].x.toFixed(1)}
@@ -91,6 +91,45 @@ const tessEdges = [...TESSERACT.edges].sort(
     display: block;
     width: 100%;
     height: auto;
-    background: #000;
+  }
+  /* Draw-in on load; the tesseract drifts. Reduced motion jumps to the end state (global.css). */
+  .draw {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: draw 1.6s 0.2s var(--ease-out) forwards;
+  }
+  .pop {
+    opacity: 0;
+    animation: pop 0.4s var(--ease-out) forwards;
+  }
+  .grow {
+    transform-box: fill-box;
+    transform-origin: bottom;
+    transform: scaleY(0);
+    animation: grow 0.7s var(--ease-out) forwards;
+  }
+  .pulse {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: pulse 2.4s 1.6s ease-in-out infinite;
+  }
+  .spin {
+    transform-origin: 150px 82px;
+    animation: spin 60s linear infinite;
+  }
+  @keyframes draw {
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes pop {
+    to { opacity: 1; }
+  }
+  @keyframes grow {
+    to { transform: scaleY(1); }
+  }
+  @keyframes pulse {
+    50% { transform: scale(1.6); opacity: 0.6; }
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 </style>

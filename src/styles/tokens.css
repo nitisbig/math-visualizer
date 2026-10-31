@@ -4,10 +4,21 @@
   --bg: #000000;
   --card: #05070a;
   --ink: #f5f7fa;
+  --ink-2: #c9ced8;
   --muted: #7c8597;
   --grid: #1a1f2b;
   --line: #2a3140;
   --axis: #3a4252;
+
+  /* Surfaces, darkest to lightest. */
+  --s0: #000000;
+  --s1: #07090d;
+  --s2: #0d1016;
+  --s3: #151922;
+  --hair: rgba(255, 255, 255, 0.06);
+  --hair-2: rgba(255, 255, 255, 0.1);
+  --glass: rgba(10, 12, 17, 0.72);
+  --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -24px rgba(0, 0, 0, 0.9);
 
   --cyan: #22d3ee;
   --amber: #ffb020;
@@ -23,11 +34,43 @@
   --font-body: "DM Sans", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  --radius: 12px;
+  /* Type scale */
+  --t-xs: 12px;
+  --t-sm: 13px;
+  --t-md: 15px;
+  --t-lg: 20px;
+  --t-xl: 28px;
+  --t-2xl: 44px;
+
+  /* Spacing scale */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --radius: var(--r-md);
   --gutter: 16px;
   --max: 1080px;
+  --max-wide: 1320px;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --ease-in: cubic-bezier(0.3, 0, 1, 1);
 
+  /* App chrome (mobile) */
+  --appbar: 52px;
+  --tabbar: 60px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
   color-scheme: dark;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: 24px;
+  }
 }

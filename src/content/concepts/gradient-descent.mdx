@@ -12,29 +12,31 @@ import Equation from "../../components/Equation.astro";
 import Descent1D from "../../visualizers/gradient-descent/Descent1D";
 import Descent2D from "../../visualizers/gradient-descent/Descent2D";
 
-<Descent1D client:visible />
-
-## What you’re seeing
+<Descent1D client:visible>
+<div slot="explain">
 
 1. The <span class="c-cyan">curve</span> is the **loss**: how wrong the model is for each setting of x.
 2. The <span class="c-magenta">tangent</span> shows the **slope** at the ball. A positive slope means downhill is to the left.
-3. Each step moves the <span class="c-amber">ball</span> against the slope, by an amount set by the learning rate η.
-4. Try η = 0.1, then 1.0, then 1.8, then 2.2. The ball crawls, then jumps straight to the bottom, then zig-zags, and finally <span class="c-alert">flies off</span>.
+3. Each step moves the <span class="c-amber">ball</span> against the slope, by an amount set by the learning rate η. The dashed ring shows where the next step will land.
+4. Small η crawls, η = 1 jumps straight to the bottom, larger η zig-zags, and past 2 the ball <span class="c-alert">flies off</span>.
 
 <Equation tex={String.raw`x_{\text{new}} = x - \textcolor{#FFB020}{\eta}\,\textcolor{#FF3D9A}{f'(x)}`} caption="The whole algorithm: one line, repeated." />
 
-## Now in two dimensions
+</div>
+</Descent1D>
 
-Real models have millions of knobs, not one. With two of them, the loss becomes a landscape, and the slope becomes the **gradient** <span class="c-magenta">∇f</span>, an arrow pointing straight uphill. Gradient descent walks the opposite way.
+<Descent2D client:visible>
+<div slot="explain">
 
-<Descent2D client:visible />
+Real models have millions of knobs, not one. With two of them the loss becomes a landscape, and the slope becomes the **gradient** <span class="c-magenta">∇f</span>, an arrow pointing straight uphill. Gradient descent walks the opposite way.
 
 <Equation tex={String.raw`\mathbf{p}_{\text{new}} = \mathbf{p} - \textcolor{#FFB020}{\eta}\,\textcolor{#FF3D9A}{\nabla f(\mathbf{p})}`} />
 
-### Things to try
-
-- **Narrow valley:** plain gradient descent zig-zags between the walls. Switch to **Momentum** and it rolls straight down the valley.
-- **Two minima:** gradient descent settles in the nearest dip. With momentum at β = 0.9, the ball carries enough speed to escape into the deeper one.
-- **Rosenbrock:** the classic banana-shaped valley. Plain gradient descent needs over 2,000 steps. Momentum gets there in about 200.
+- **Narrow valley:** plain gradient descent zig-zags between the walls. **Momentum** rolls straight down the valley.
+- **Two minima:** gradient descent settles in the nearest dip. With momentum at β = 0.9 the ball carries enough speed to escape into the deeper one.
+- **Rosenbrock:** the classic banana-shaped valley. Plain gradient descent needs over 2,000 steps; momentum gets there in about 200.
 
 <Equation tex={String.raw`\begin{aligned} \mathbf{v} &\leftarrow \beta\,\mathbf{v} + \nabla f(\mathbf{p}) \\ \mathbf{p} &\leftarrow \mathbf{p} - \eta\,\mathbf{v} \end{aligned}`} caption="Momentum: the ball remembers where it was heading." />
+
+</div>
+</Descent2D>

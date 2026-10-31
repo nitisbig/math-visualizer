@@ -1,12 +1,12 @@
-import { useRef, useState } from "react";
-import { arrow, dot, dotGrid, glow, line, pointerPos, prefersReducedMotion, scale, useCanvas, useRaf, type Size } from "../../lib/canvas";
+import { useRef, useState, type ReactNode } from "react";
+import { arrow, ball, dot, dotGrid, glow, line, pointerPos, prefersReducedMotion, scale, useCanvas, useRaf, type Size } from "../../lib/canvas";
 import { fmt } from "../../lib/format";
 import { C, FONT_MONO, alpha } from "../../lib/theme";
 import { bool, useUrlNumber, useUrlState } from "../../lib/urlState";
-import Legend from "../../components/ui/Legend";
-import Readout from "../../components/ui/Readout";
 import Slider from "../../components/ui/Slider";
 import Toggle from "../../components/ui/Toggle";
+import Workspace from "../../components/ui/Workspace";
+import { circleInsight } from "./insights";
 import { expi, polygon } from "./math";
 
 const TAU = Math.PI * 2;
@@ -23,7 +23,7 @@ function frame({ w, h }: Size) {
   return { sx, sy, k };
 }
 
-export default function EulerCircle() {
+export default function EulerCircle({ explain }: { explain?: ReactNode }) {
   const [theta, setTheta] = useUrlNumber("t", 1, 0, TAU);
   const [showPoly, setShowPoly] = useUrlState("poly", false, bool);
   const [n, setN] = useUrlNumber("steps", 6, 1, 64);
@@ -32,20 +32,13 @@ export default function EulerCircle() {
 
   const atPi = Math.abs(theta - Math.PI) < 0.004;
 
-  useRaf((dt) => {
-    if (!tween) return;
-    const t = Math.min(1, tween.t + dt / PLAY_SECONDS);
-    setTheta(tween.from + (tween.to - tween.from) * ease(t));
-    setTween(t >= 1 ? null : { ...tween, t });
-  }, tween !== null);
-
   const playToPi = () => {
     const from = atPi ? 0 : theta;
     if (prefersReducedMotion()) return setTheta(Math.PI);
     setTween({ from, to: Math.PI, t: 0 });
   };
 
-  const { ref } = useCanvas(
+  const { ref, visible } = useCanvas(
     (ctx, size) => {
       const { sx, sy, k } = frame(size);
       const ox = sx(0);
@@ -76,7 +69,15 @@ export default function EulerCircle() {
       ctx.beginPath();
       ctx.arc(ox, oy, k, 0, TAU);
       ctx.stroke();
-      ctx.strokeStyle = C.cyan;
+      // The travelled arc brightens toward the point (conic gradient, plain cyan where unsupported).
+      if ("createConicGradient" in ctx && theta > 0.01) {
+        const g = ctx.createConicGradient(0, ox, oy);
+        const at = Math.max(0, 1 - theta / TAU);
+        g.addColorStop(0, C.cyan);
+        g.addColorStop(at, C.cyan);
+        g.addColorStop(1, alpha(C.cyan, 0.15));
+        ctx.strokeStyle = g;
+      } else ctx.strokeStyle = C.cyan;
       ctx.lineWidth = 2.5;
       glow(ctx, C.cyan, 12, () => {
         ctx.beginPath();
@@ -98,7 +99,13 @@ export default function EulerCircle() {
         glow(ctx, C.blue, 10, () => dot(ctx, sx(ex), sy(ey), 4.5));
       }
 
-      // Projections onto the axes
+      // Projections onto the axes: cos θ along Re, sin θ along Im.
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = alpha(C.ink, 0.45);
+      line(ctx, ox, oy, px, oy);
+      line(ctx, ox, oy, ox, py);
+      ctx.lineCap = "butt";
       ctx.setLineDash([3, 4]);
       ctx.strokeStyle = C.muted;
       ctx.lineWidth = 1;
@@ -127,8 +134,7 @@ export default function EulerCircle() {
       ctx.lineWidth = 2;
       glow(ctx, C.magenta, 8, () => arrow(ctx, px, py, px - im * vl, py - re * vl, 8));
 
-      ctx.fillStyle = pointColor;
-      glow(ctx, pointColor, 16, () => dot(ctx, px, py, 6.5));
+      ball(ctx, px, py, 6.5, pointColor);
 
       ctx.font = `13px ${FONT_MONO}`;
       ctx.textAlign = re >= 0 ? "left" : "right";
@@ -139,6 +145,14 @@ export default function EulerCircle() {
     },
     [theta, showPoly, n, atPi],
   );
+
+  useRaf((dt) => {
+    if (!tween) return;
+    const t = Math.min(1, tween.t + dt / PLAY_SECONDS);
+    setTheta(tween.from + (tween.to - tween.from) * ease(t));
+    setTween(t >= 1 ? null : { ...tween, t });
+  }, tween !== null, visible);
+
 
   const onPointer = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.type === "pointerdown") {
@@ -161,32 +175,41 @@ export default function EulerCircle() {
   const end = showPoly ? polygon(theta, n)[n] : null;
 
   return (
-    <div className="viz">
-      <div className="viz-head">
-        <span className="viz-title">e to an imaginary power</span>
-        <Legend
-          items={[
-            { color: "cyan", label: "angle θ travelled" },
-            { color: "amber", label: "e^iθ" },
-            { color: "magenta", label: "rate of change" },
-            ...(showPoly ? [{ color: "blue" as const, label: "(1 + iθ/n)ⁿ" }] : []),
-            { color: "lime", label: "θ = π" },
-          ]}
+    <Workspace
+      title="e to an imaginary power"
+      tab="Rotation"
+      legend={[
+        { color: "cyan", label: "angle θ travelled" },
+        { color: "amber", label: "e^iθ" },
+        { color: "magenta", label: "rate of change" },
+        ...(showPoly ? [{ color: "blue" as const, label: "(1 + iθ/n)ⁿ" }] : []),
+        { color: "lime", label: "θ = π" },
+      ]}
+      stage={
+        <canvas
+          ref={ref}
+          className="stage grab"
+          onPointerDown={onPointer}
+          onPointerMove={onPointer}
+          onPointerUp={() => (dragging.current = false)}
+          onPointerCancel={() => (dragging.current = false)}
+          role="img"
+          aria-label={`Unit circle. e to the i theta at theta = ${fmt(theta, 2)} is ${fmt(re)} plus ${fmt(im)} i.`}
         />
-      </div>
-      <canvas
-        ref={ref}
-        className="stage grab ar-wide"
-        onPointerDown={onPointer}
-        onPointerMove={onPointer}
-        onPointerUp={() => (dragging.current = false)}
-        onPointerCancel={() => (dragging.current = false)}
-        role="img"
-        aria-label={`Unit circle. e to the i theta at theta = ${fmt(theta, 2)} is ${fmt(re)} plus ${fmt(im)} i.`}
-      />
-      <div className="viz-body">
-        <p className="hint">Drag the point around the circle, or play to θ = π.</p>
-        <div className="controls">
+      }
+      status={atPi ? { text: "e^iπ = −1", color: C.lime } : { text: `θ = ${(theta / Math.PI).toFixed(3)}π`, color: C.amber }}
+      coach="Drag the point around the circle"
+      transport={{
+        playing: tween !== null,
+        playLabel: "Play to π",
+        onPlay: () => (tween ? setTween(null) : playToPi()),
+        onReset: () => {
+          setTween(null);
+          setTheta(0);
+        },
+      }}
+      controls={
+        <>
           <Slider
             label="Angle θ"
             value={theta}
@@ -197,31 +220,39 @@ export default function EulerCircle() {
               setTween(null);
               setTheta(v);
             }}
-            format={(v) => `${v.toFixed(3)} = ${(v / Math.PI).toFixed(3)}π`}
+            format={(v) => `${(v / Math.PI).toFixed(3)}π`}
             color={atPi ? "lime" : "amber"}
           />
-          <div className="ctl buttons">
-            <button type="button" className="btn primary" onClick={playToPi}>
-              <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" /></svg>
-              Play to π
-            </button>
-          </div>
-        </div>
-        <div className="controls">
           <Toggle label="Show (1 + iθ/n)ⁿ" checked={showPoly} onChange={setShowPoly} />
           {showPoly && <Slider label="Steps n" value={n} min={1} max={64} step={1} onChange={setN} color="blue" />}
-        </div>
-        <Readout
-          items={[
-            { label: "cos θ", value: fmt(re, 4) },
-            { label: "sin θ", value: fmt(im, 4) },
-            { label: "e^iθ", value: fmtComplex(re, im), color: atPi ? "lime" : "amber" },
-            ...(end
-              ? [{ label: `n = ${n} lands at`, value: fmtComplex(end[0], end[1]), color: "blue" as const }]
-              : []),
-          ]}
-        />
-      </div>
-    </div>
+        </>
+      }
+      stats={[
+        { label: "cos θ", value: fmt(re, 3) },
+        { label: "sin θ", value: fmt(im, 3) },
+        end
+          ? { label: `n = ${n} lands at`, value: fmtComplex(end[0], end[1]), color: "blue" as const }
+          : { label: "e^iθ", value: fmtComplex(re, im), color: atPi ? "lime" : "amber" },
+      ]}
+      insight={circleInsight(theta, showPoly, n)}
+      tries={[
+        { label: "Play to π", apply: playToPi },
+        {
+          label: "Compound it: n = 6",
+          apply: () => {
+            setShowPoly(true);
+            setN(6);
+          },
+        },
+        {
+          label: "n = 64",
+          apply: () => {
+            setShowPoly(true);
+            setN(64);
+          },
+        },
+      ]}
+      explain={explain}
+    />
   );
 }

@@ -58,37 +58,42 @@ type WireOpts = {
   emphasis?: (i: number) => number;
 };
 
-/** Far edges first, each tinted by depth; an optional soft glow pass per color. */
+/**
+ * Far edges first, each tinted and thinned by depth, so the shape reads in 3D.
+ * The optional glow is a cheap halo: wide faint strokes per color, no shadowBlur.
+ */
 export function drawWire(ctx: CanvasRenderingContext2D, pts: ScreenPoint[], edges: Edge[], opts: WireOpts = {}) {
   const { width = 2, color, glowBlur = 0, far = 0.35, emphasis } = opts;
   const shade = depthShade(pts, far);
   const order = edges.map((_, i) => i).sort((i, j) => mid(pts, edges[j]) - mid(pts, edges[i]));
   ctx.lineCap = "round";
-  ctx.lineWidth = width;
   if (glowBlur > 0) {
     const byColor = new Map<string, Edge[]>();
     for (const e of edges) {
       const c = color ?? AXIS_COLORS[e.axis];
       byColor.set(c, [...(byColor.get(c) ?? []), e]);
     }
-    ctx.save();
     for (const [c, list] of byColor) {
-      ctx.strokeStyle = alpha(c, 0.5);
-      ctx.shadowColor = c;
-      ctx.shadowBlur = glowBlur;
       ctx.beginPath();
       for (const e of list) {
         ctx.moveTo(pts[e.a].x, pts[e.a].y);
         ctx.lineTo(pts[e.b].x, pts[e.b].y);
       }
-      ctx.stroke();
+      for (const [k, a] of [
+        [0.9, 0.06],
+        [0.45, 0.12],
+      ]) {
+        ctx.strokeStyle = alpha(c, a);
+        ctx.lineWidth = width + glowBlur * k;
+        ctx.stroke();
+      }
     }
-    ctx.restore();
   }
   for (const i of order) {
     const e = edges[i];
-    const a = Math.min(1, shade(mid(pts, e)) * (emphasis?.(i) ?? 1));
-    ctx.strokeStyle = alpha(color ?? AXIS_COLORS[e.axis], a);
+    const d = shade(mid(pts, e));
+    ctx.strokeStyle = alpha(color ?? AXIS_COLORS[e.axis], Math.min(1, d * (emphasis?.(i) ?? 1)));
+    ctx.lineWidth = width * (0.55 + 0.6 * d);
     ctx.beginPath();
     ctx.moveTo(pts[e.a].x, pts[e.a].y);
     ctx.lineTo(pts[e.b].x, pts[e.b].y);
@@ -98,14 +103,44 @@ export function drawWire(ctx: CanvasRenderingContext2D, pts: ScreenPoint[], edge
 
 const mid = (pts: ScreenPoint[], e: Edge) => (pts[e.a].z + pts[e.b].z) / 2;
 
-/** Translucent filled polygons, far to near. */
-export function drawFaces(ctx: CanvasRenderingContext2D, pts: ScreenPoint[], faces: number[][], fill: string) {
+/**
+ * Translucent faces, far to near. Faces turned toward the viewer are brighter
+ * (projected area as a cheap stand-in for Lambert shading), near ones more so.
+ */
+export function drawFaces(ctx: CanvasRenderingContext2D, pts: ScreenPoint[], faces: number[][], color: string, opacity = 0.14) {
   const depth = (f: number[]) => f.reduce((acc, i) => acc + pts[i].z, 0) / f.length;
-  ctx.fillStyle = fill;
-  for (const f of [...faces].sort((a, b) => depth(b) - depth(a))) {
+  const area = (f: number[]) => {
+    let s = 0;
+    for (let k = 0; k < f.length; k++) {
+      const p = pts[f[k]];
+      const q = pts[f[(k + 1) % f.length]];
+      s += p.x * q.y - q.x * p.y;
+    }
+    return Math.abs(s) / 2;
+  };
+  const areas = faces.map(area);
+  const maxArea = Math.max(1e-9, ...areas);
+  const shade = depthShade(pts, 0.5);
+  const order = faces.map((_, i) => i).sort((i, j) => depth(faces[j]) - depth(faces[i]));
+  for (const i of order) {
+    const f = faces[i];
+    const facing = Math.sqrt(areas[i] / maxArea);
+    ctx.fillStyle = alpha(color, opacity * (0.35 + 0.9 * facing) * shade(depth(f)));
     ctx.beginPath();
-    f.forEach((i, k) => (k ? ctx.lineTo(pts[i].x, pts[i].y) : ctx.moveTo(pts[i].x, pts[i].y)));
+    f.forEach((v, k) => (k ? ctx.lineTo(pts[v].x, pts[v].y) : ctx.moveTo(pts[v].x, pts[v].y)));
     ctx.closePath();
+    ctx.fill();
+  }
+}
+
+/** A corner: bigger and brighter when near, smaller and dimmer when far. */
+export function depthDots(ctx: CanvasRenderingContext2D, pts: ScreenPoint[], r: number, color: string) {
+  const shade = depthShade(pts, 0.4);
+  for (const p of pts) {
+    const d = shade(p.z);
+    ctx.fillStyle = alpha(color, 0.35 + 0.65 * d);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, r * (0.6 + 0.6 * d), 0, Math.PI * 2);
     ctx.fill();
   }
 }

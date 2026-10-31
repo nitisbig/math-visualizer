@@ -1,4 +1,5 @@
 import { useEffect, useRef, type DependencyList } from "react";
+import { alpha } from "./theme";
 
 export type Size = { w: number; h: number };
 export type DrawFn = (ctx: CanvasRenderingContext2D, size: Size) => void;
@@ -12,9 +13,16 @@ export function useCanvas(draw: DrawFn, deps: DependencyList) {
   const drawRef = useRef(draw);
   drawRef.current = draw;
   const sizeRef = useRef<Size>({ w: 0, h: 0 });
+  // Off-screen canvases skip painting and catch up when they scroll back in.
+  const visible = useRef(true);
+  const dirty = useRef(false);
 
   const paint = () => {
     const canvas = ref.current;
+    if (!visible.current) {
+      dirty.current = true;
+      return;
+    }
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx || sizeRef.current.w === 0) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -34,17 +42,53 @@ export function useCanvas(draw: DrawFn, deps: DependencyList) {
       canvas.height = Math.round(height * dpr);
       paint();
     });
+    const io = new IntersectionObserver(([entry]) => {
+      visible.current = entry.isIntersecting;
+      if (visible.current && dirty.current) {
+        dirty.current = false;
+        paint();
+      }
+    });
     ro.observe(canvas);
-    return () => ro.disconnect();
+    io.observe(canvas);
+    return () => {
+      ro.disconnect();
+      io.disconnect();
+    };
   }, []);
 
   useEffect(paint, deps);
 
-  return { ref, size: sizeRef, redraw: paint };
+  return { ref, size: sizeRef, redraw: paint, visible };
 }
 
-/** Calls `tick(dtSeconds)` every frame while `running` is true. */
-export function useRaf(tick: (dt: number) => void, running: boolean) {
+/**
+ * Caches a static layer (grid, axes, a curve, a field) in an offscreen canvas.
+ * `draw(ctx, key, size, render)` re-renders only when `key` or the size changes.
+ */
+export function useLayer() {
+  const cache = useRef<{ key: string; img: HTMLCanvasElement } | null>(null);
+  return (ctx: CanvasRenderingContext2D, key: string, size: Size, render: DrawFn) => {
+    const k = `${key}:${size.w}x${size.h}`;
+    if (cache.current?.key !== k) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const img = cache.current?.img ?? document.createElement("canvas");
+      img.width = Math.round(size.w * dpr);
+      img.height = Math.round(size.h * dpr);
+      const c = img.getContext("2d")!;
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      render(c, size);
+      cache.current = { key: k, img };
+    }
+    ctx.drawImage(cache.current.img, 0, 0, size.w, size.h);
+  };
+}
+
+/**
+ * Calls `tick(dtSeconds)` every frame while `running` is true.
+ * Pass `useCanvas`'s `visible` ref as `gate` to pause while the canvas is off-screen.
+ */
+export function useRaf(tick: (dt: number) => void, running: boolean, gate?: { current: boolean }) {
   const tickRef = useRef(tick);
   tickRef.current = tick;
   useEffect(() => {
@@ -54,7 +98,7 @@ export function useRaf(tick: (dt: number) => void, running: boolean) {
     const loop = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
-      tickRef.current(dt);
+      if (!gate || gate.current) tickRef.current(dt);
       id = requestAnimationFrame(loop);
     };
     id = requestAnimationFrame(loop);
@@ -81,14 +125,56 @@ export function pointerPos(e: { clientX: number; clientY: number }, canvas: HTML
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
-/** Runs `fn` twice: once as a soft glow, once crisp. Keeps glow a highlight, not a wash. */
+/**
+ * Draws `fn` with a soft halo, then crisp on top. The halo is two wide, faint
+ * strokes of the same path (fills are stroked too), which costs a fraction of
+ * `shadowBlur` and keeps glow a highlight, not a wash.
+ */
 export function glow(ctx: CanvasRenderingContext2D, color: string, blur: number, fn: () => void) {
+  const fill = ctx.fill;
   ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = blur;
-  fn();
+  ctx.strokeStyle = color;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.fill = ((p?: Path2D | CanvasFillRule) => (p instanceof Path2D ? ctx.stroke(p) : ctx.stroke())) as typeof ctx.fill;
+  const base = ctx.lineWidth;
+  for (const [k, a] of [
+    [0.9, 0.07],
+    [0.45, 0.14],
+  ]) {
+    ctx.lineWidth = base + blur * k;
+    ctx.globalAlpha = a;
+    fn();
+  }
+  ctx.fill = fill;
   ctx.restore();
   fn();
+}
+
+/** A lit sphere: radial highlight, rim and a soft halo. */
+export function ball(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string) {
+  const halo = ctx.createRadialGradient(x, y, r * 0.6, x, y, r * 3.2);
+  halo.addColorStop(0, alpha(color, 0.35));
+  halo.addColorStop(1, alpha(color, 0));
+  ctx.fillStyle = halo;
+  dot(ctx, x, y, r * 3.2);
+  const body = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+  body.addColorStop(0, "#FFFFFF");
+  body.addColorStop(0.35, color);
+  body.addColorStop(1, alpha(color, 0.75));
+  ctx.fillStyle = body;
+  dot(ctx, x, y, r);
+}
+
+/** A straight line whose ends fade out. */
+export function fadeLine(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number, color: string) {
+  const g = ctx.createLinearGradient(x0, y0, x1, y1);
+  g.addColorStop(0, alpha(color, 0));
+  g.addColorStop(0.25, color);
+  g.addColorStop(0.75, color);
+  g.addColorStop(1, alpha(color, 0));
+  ctx.strokeStyle = g;
+  line(ctx, x0, y0, x1, y1);
 }
 
 export function line(ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number) {
@@ -125,7 +211,7 @@ export function arrow(
 }
 
 /** Faint dot grid, the only allowed background texture. */
-export function dotGrid(ctx: CanvasRenderingContext2D, { w, h }: Size, spacing = 32, color = "rgba(245,247,250,0.07)") {
+export function dotGrid(ctx: CanvasRenderingContext2D, { w, h }: Size, spacing = 32, color = "rgba(245,247,250,0.06)") {
   ctx.fillStyle = color;
   for (let x = spacing / 2; x < w; x += spacing) {
     for (let y = spacing / 2; y < h; y += spacing) {

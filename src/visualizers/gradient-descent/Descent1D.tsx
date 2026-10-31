@@ -1,22 +1,29 @@
-import { useEffect, useRef, useState } from "react";
-import { arrow, axes, dot, dotGrid, glow, line, pointerPos, prefersReducedMotion, scale, useCanvas, useRaf } from "../../lib/canvas";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { arrow, axes, ball, dot, dotGrid, fadeLine, glow, pointerPos, prefersReducedMotion, scale, useCanvas, useLayer, useRaf, type Size } from "../../lib/canvas";
 import { fmt, fmtSig } from "../../lib/format";
 import { C, FONT_MONO, alpha } from "../../lib/theme";
 import { oneOf, useUrlNumber, useUrlState } from "../../lib/urlState";
-import Legend from "../../components/ui/Legend";
-import PlayControls from "../../components/ui/PlayControls";
-import Readout from "../../components/ui/Readout";
 import Segmented from "../../components/ui/Segmented";
 import Slider from "../../components/ui/Slider";
-import { FN1, FN1_IDS, type Fn1Id } from "./functions";
+import Workspace from "../../components/ui/Workspace";
+import { FN1, FN1_IDS, type Fn1, type Fn1Id } from "./functions";
+import { insight1D } from "./insights";
 import { init, step, type OptState } from "./optimizer";
 
 const X: [number, number] = [-3, 3];
 const STEP_EVERY = 0.45; // seconds between steps while playing
 const TWEEN = 0.3; // seconds to glide along each step
 const MAX_STEPS = 200;
+const PAD = { x: 28, top: 56, bottom: 64 };
 
-export default function Descent1D() {
+function view(fn: Fn1, size: Size) {
+  return {
+    sx: scale(X[0], X[1], PAD.x, size.w - PAD.x),
+    sy: scale(fn.y[0], fn.y[1], size.h - PAD.bottom, PAD.top),
+  };
+}
+
+export default function Descent1D({ explain }: { explain?: ReactNode }) {
   const [fnId, setFnId] = useUrlState<Fn1Id>("curve", "bowl", oneOf(FN1_IDS));
   const [lr, setLr] = useUrlNumber("lr1", 0.3, 0.01, 2.5);
   const [x0, setX0] = useUrlNumber("x1", 2.6, -2.9, 2.9);
@@ -27,6 +34,7 @@ export default function Descent1D() {
   const [tween, setTween] = useState(1);
   const clock = useRef(0);
   const dragging = useRef(false);
+  const layer = useLayer();
 
   // Any change to the setup restarts the run from the start point.
   useEffect(() => {
@@ -46,44 +54,45 @@ export default function Descent1D() {
     if (done) setPlaying(false);
   }, [done]);
 
-  useRaf((dt) => {
-    if (tween < 1) setTween((t) => Math.min(1, t + dt / TWEEN));
-    if (!playing) return;
-    clock.current += dt;
-    if (clock.current >= STEP_EVERY && tween >= 1) {
-      clock.current = 0;
-      advance();
-    }
-  }, playing || tween < 1);
-
-  const { ref } = useCanvas(
+  const { ref, visible } = useCanvas(
     (ctx, size) => {
-      const pad = 28;
-      const sx = scale(X[0], X[1], pad, size.w - pad);
-      const sy = scale(fn.y[0], fn.y[1], size.h - pad, pad);
+      const { sx, sy } = view(fn, size);
       const diverged = cur.status === "diverged";
 
-      dotGrid(ctx, size);
-      axes(ctx, sx, sy, size, { color: C.axis, label: C.muted, ticks: { x: [-2, -1, 1, 2] }, font: `11px ${FONT_MONO}` });
-
-      // Curve
-      ctx.strokeStyle = C.cyan;
-      ctx.lineWidth = 2;
-      glow(ctx, C.cyan, 12, () => {
-        ctx.beginPath();
+      // Static: grid, axes, the loss curve with its soft fill, minima.
+      layer(ctx, fnId, size, (c) => {
+        dotGrid(c, size);
+        axes(c, sx, sy, size, { color: C.axis, label: C.muted, ticks: { x: [-2, -1, 1, 2] }, font: `11px ${FONT_MONO}` });
+        const curve = new Path2D();
         for (let i = 0; i <= 240; i++) {
           const x = X[0] + ((X[1] - X[0]) * i) / 240;
-          const y = sy(fn.f(x));
-          i === 0 ? ctx.moveTo(sx(x), y) : ctx.lineTo(sx(x), y);
+          i === 0 ? curve.moveTo(sx(x), sy(fn.f(x))) : curve.lineTo(sx(x), sy(fn.f(x)));
         }
-        ctx.stroke();
+        const area = new Path2D(curve);
+        area.lineTo(sx(X[1]), size.h);
+        area.lineTo(sx(X[0]), size.h);
+        area.closePath();
+        const g = c.createLinearGradient(0, PAD.top, 0, size.h);
+        g.addColorStop(0, alpha(C.cyan, 0.02));
+        g.addColorStop(1, alpha(C.cyan, 0.14));
+        c.fillStyle = g;
+        c.fill(area);
+        c.strokeStyle = C.cyan;
+        c.lineWidth = 2;
+        glow(c, C.cyan, 12, () => c.stroke(curve));
+        for (const m of fn.minima) {
+          c.strokeStyle = alpha(C.lime, 0.5);
+          c.lineWidth = 1;
+          c.setLineDash([2, 4]);
+          c.beginPath();
+          c.moveTo(sx(m), sy(fn.f(m)));
+          c.lineTo(sx(m), size.h - PAD.bottom + 24);
+          c.stroke();
+          c.setLineDash([]);
+          c.fillStyle = C.lime;
+          glow(c, C.lime, 10, () => dot(c, sx(m), sy(fn.f(m)), 4));
+        }
       });
-
-      // Minima
-      ctx.fillStyle = C.lime;
-      for (const m of fn.minima) {
-        glow(ctx, C.lime, 10, () => dot(ctx, sx(m), sy(fn.f(m)), 4));
-      }
 
       // Path: completed steps fade with age; the newest one glides in.
       const pts = states.map((s) => s.p[0]);
@@ -95,45 +104,71 @@ export default function Descent1D() {
         const ay = sy(fn.f(pts[i - 1]));
         const bx = ax + (sx(pts[i]) - ax) * t;
         const by = ay + (sy(fn.f(pts[i])) - ay) * t;
-        ctx.strokeStyle = ctx.fillStyle = alpha(pathColor, Math.max(0.18, 0.9 - age * 0.12));
-        ctx.lineWidth = 1.5;
-        arrow(ctx, ax, ay, bx, by, 7);
-        dot(ctx, ax, ay, 2.5);
+        ctx.strokeStyle = ctx.fillStyle = alpha(pathColor, Math.max(0.12, 0.85 - age * 0.11));
+        ctx.lineWidth = 1.25;
+        arrow(ctx, ax, ay, bx, by, 6);
+        dot(ctx, ax, ay, 2);
       }
 
-      // Current point (interpolated) and its tangent
+      // Current point (interpolated)
       const prev = pts[pts.length - 2] ?? pts[pts.length - 1];
       const x = prev + (pts[pts.length - 1] - prev) * (pts.length > 1 ? tween : 1);
       if (Math.abs(x) < 50) {
         const px = sx(x);
         const py = sy(fn.f(x));
         const slope = fn.df(x);
-        // Tangent drawn in pixel space so it has a fixed on-screen length.
+
+        // Ghost of the next step, so you can see where η will send the ball.
+        if (!done && tween >= 1) {
+          const nx = x - lr * slope;
+          const gx = sx(nx);
+          const gy = sy(fn.f(nx));
+          if (Math.abs(nx) < 6 && gy > -size.h) {
+            ctx.strokeStyle = alpha(C.amber, 0.45);
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 4]);
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.quadraticCurveTo((px + gx) / 2, Math.min(py, gy) - 36, gx, gy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.arc(gx, gy, 6, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+        }
+
+        // Tangent in pixel space so it has a fixed on-screen length, fading at the ends.
         const k = (sy(fn.f(x) + slope) - sy(fn.f(x))) / (sx(x + 1) - sx(x));
-        const L = 70 / Math.hypot(1, k);
-        ctx.strokeStyle = C.magenta;
+        const L = 84 / Math.hypot(1, k);
         ctx.lineWidth = 1.5;
-        glow(ctx, C.magenta, 8, () => line(ctx, px - L, py - k * L, px + L, py + k * L));
+        fadeLine(ctx, px - L, py - k * L, px + L, py + k * L, C.magenta);
 
-        ctx.fillStyle = diverged ? C.alert : C.amber;
-        glow(ctx, ctx.fillStyle, 16, () => dot(ctx, px, py, 7));
-        ctx.fillStyle = C.bg;
-        dot(ctx, px, py, 2.5);
+        ball(ctx, px, py, 7, diverged ? C.alert : C.amber);
 
-        ctx.font = `12px ${FONT_MONO}`;
+        ctx.font = `11px ${FONT_MONO}`;
         ctx.fillStyle = C.magenta;
-        ctx.textAlign = px > size.w * 0.6 ? "right" : "left";
+        const right = px > size.w * 0.6;
+        ctx.textAlign = right ? "right" : "left";
         ctx.textBaseline = "bottom";
-        ctx.fillText(`slope ${fmt(slope, 2)}`, px + (px > size.w * 0.6 ? -14 : 14), py - 12);
+        ctx.fillText(`slope ${fmt(slope, 2)}`, px + (right ? -16 : 16), py - 14);
       }
-
-      ctx.font = `12px ${FONT_MONO}`;
-      ctx.fillStyle = C.muted;
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      ctx.fillText("f(x)", pad, 10);
     },
-    [states, tween, fn],
+    [states, tween, fn, lr, done],
+  );
+
+  useRaf(
+    (dt) => {
+      if (tween < 1) setTween((t) => Math.min(1, t + dt / TWEEN));
+      if (!playing) return;
+      clock.current += dt;
+      if (clock.current >= STEP_EVERY && tween >= 1) {
+        clock.current = 0;
+        advance();
+      }
+    },
+    playing || tween < 1,
+    visible,
   );
 
   const onPointer = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -143,80 +178,86 @@ export default function Descent1D() {
       setPlaying(false);
     }
     if (!dragging.current) return;
-    const { x } = pointerPos(e, e.currentTarget);
-    const w = e.currentTarget.clientWidth;
-    const v = scale(28, w - 28, X[0], X[1])(x);
+    const c = e.currentTarget;
+    const { x } = pointerPos(e, c);
+    const v = view(fn, { w: c.clientWidth, h: c.clientHeight }).sx.invert(x);
     setX0(Math.round(Math.max(-2.9, Math.min(2.9, v)) * 100) / 100);
+  };
+
+  const preset = (id: Fn1Id, rate: number) => () => {
+    setFnId(id);
+    setLr(rate);
+    setX0(FN1[id].start);
+    setStates([init([FN1[id].start])]);
+    setPlaying(true);
   };
 
   const x = cur.p[0];
   const status =
     cur.status === "diverged"
-      ? { text: "Diverged — η is too large", color: C.alert }
+      ? { text: "Diverged", color: C.alert }
       : cur.status === "converged"
-        ? { text: `Converged in ${cur.iter} steps`, color: C.lime }
+        ? { text: `Converged · ${cur.iter} steps`, color: C.lime }
         : cur.iter >= MAX_STEPS
-          ? { text: `Still crawling after ${MAX_STEPS} steps`, color: C.muted }
-          : { text: cur.iter === 0 ? "Ready" : "Descending…", color: C.muted };
+          ? { text: `Still crawling · ${MAX_STEPS} steps`, color: C.muted }
+          : { text: cur.iter === 0 ? "Ready" : `Step ${cur.iter}`, color: cur.iter === 0 ? C.muted : C.amber };
 
   return (
-    <div className="viz">
-      <div className="viz-head">
-        <span className="viz-title">Roll down a curve</span>
-        <Legend
-          items={[
-            { color: "cyan", label: "loss f(x)" },
-            { color: "amber", label: "position" },
-            { color: "magenta", label: "slope" },
-            { color: "lime", label: "minimum" },
-          ]}
+    <Workspace
+      title="Roll down a curve"
+      tab="Curve"
+      legend={[
+        { color: "cyan", label: "loss f(x)" },
+        { color: "amber", label: "position" },
+        { color: "magenta", label: "slope" },
+        { color: "lime", label: "minimum" },
+      ]}
+      stage={
+        <canvas
+          ref={ref}
+          className="stage grab"
+          onPointerDown={onPointer}
+          onPointerMove={onPointer}
+          onPointerUp={() => (dragging.current = false)}
+          onPointerCancel={() => (dragging.current = false)}
+          role="img"
+          aria-label={`Curve ${fn.label}. Current position x = ${fmt(x)}, loss ${fmt(fn.f(x))}.`}
         />
-      </div>
-      <canvas
-        ref={ref}
-        className="stage grab ar-wide"
-        onPointerDown={onPointer}
-        onPointerMove={onPointer}
-        onPointerUp={() => (dragging.current = false)}
-        onPointerCancel={() => (dragging.current = false)}
-        role="img"
-        aria-label={`Curve ${fn.label}. Current position x = ${fmt(x)}, loss ${fmt(fn.f(x))}.`}
-      />
-      <div className="viz-body">
-        <p className="hint">Drag anywhere on the curve to choose a starting point, then press Play.</p>
-        <div className="controls">
+      }
+      status={status}
+      coach="Drag the curve to pick a start"
+      transport={{
+        playing,
+        onPlay: () => {
+          if (done) setStates([init([x0])]);
+          setPlaying((p) => !p);
+        },
+        onStep: done ? undefined : advance,
+        onReset: () => {
+          setPlaying(false);
+          setStates([init([x0])]);
+        },
+      }}
+      controls={
+        <>
           <Slider label="Learning rate η" value={lr} min={0.01} max={2.5} log onChange={setLr} format={fmtSig} color="amber" />
-          <Segmented
-            label="Curve"
-            value={fnId}
-            options={FN1_IDS.map((id) => ({ value: id, label: FN1[id].label }))}
-            onChange={setFnId}
-          />
-          <PlayControls
-            playing={playing}
-            onPlay={() => {
-              if (done) setStates([init([x0])]);
-              setPlaying((p) => !p);
-            }}
-            onStep={done ? undefined : advance}
-            onReset={() => {
-              setPlaying(false);
-              setStates([init([x0])]);
-            }}
-          />
-        </div>
-        <Readout
-          items={[
-            { label: "step", value: String(cur.iter) },
-            { label: "x", value: fmt(x), color: "amber" },
-            { label: "f(x)", value: fmt(fn.f(x)), color: "cyan" },
-            { label: "f′(x)", value: fmt(fn.df(x)), color: "magenta" },
-          ]}
-        />
-        <p className="status" style={{ color: status.color }} aria-live="polite">
-          {status.text}
-        </p>
-      </div>
-    </div>
+          <Segmented label="Curve" value={fnId} options={FN1_IDS.map((id) => ({ value: id, label: FN1[id].label }))} onChange={setFnId} />
+        </>
+      }
+      stats={[
+        { label: "x", value: fmt(x), color: "amber" },
+        { label: "loss f(x)", value: fmt(fn.f(x)), color: "cyan" },
+        { label: "slope f′(x)", value: fmt(fn.df(x)), color: "magenta" },
+      ]}
+      insight={insight1D(fn, lr, cur)}
+      tries={[
+        { label: "Crawl · η 0.1", apply: preset("bowl", 0.1) },
+        { label: "One jump · η 1.0", apply: preset("bowl", 1) },
+        { label: "Zig-zag · η 1.8", apply: preset("bowl", 1.8) },
+        { label: "Blow up · η 2.2", apply: preset("bowl", 2.2) },
+        { label: "Two valleys", apply: preset("valleys", 0.05) },
+      ]}
+      explain={explain}
+    />
   );
 }

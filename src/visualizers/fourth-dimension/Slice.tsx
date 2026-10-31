@@ -1,13 +1,12 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import { dotGrid, line, prefersReducedMotion, useCanvas, useRaf } from "../../lib/canvas";
 import { fmt } from "../../lib/format";
 import { C, FONT_MONO, alpha } from "../../lib/theme";
 import { oneOf, useUrlNumber, useUrlState } from "../../lib/urlState";
-import Legend from "../../components/ui/Legend";
-import PlayControls from "../../components/ui/PlayControls";
-import Readout from "../../components/ui/Readout";
 import Segmented from "../../components/ui/Segmented";
 import Slider from "../../components/ui/Slider";
+import Workspace from "../../components/ui/Workspace";
+import { sliceInsight } from "./insights";
 import {
   AXES,
   LEADS,
@@ -23,7 +22,7 @@ import {
   volume,
   type Lead,
 } from "./math";
-import { colorText, drawFaces, drawWire, glowDot, useOrbit } from "./view";
+import { depthDots, drawFaces, drawWire, glowDot, useOrbit } from "./view";
 
 const EPS = 0.005; // keep the cut strictly inside, so the slice is never empty
 const W_CAMERA = 2.4;
@@ -36,7 +35,7 @@ const LEAD_LABELS: Record<Lead, string> = { cube: "Cube", square: "Square", edge
 const formula = (lead: Lead) =>
   AXES.filter((_, i) => LEADS[lead][i]).join(" + ");
 
-export default function Slice() {
+export default function Slice({ explain }: { explain?: ReactNode }) {
   const [lead, setLead] = useUrlState<Lead>("lead", "corner", oneOf(LEAD_IDS));
   const [rawS, setS] = useUrlNumber("s", DEFAULT_S, 0, 4);
   const [playing, setPlaying] = useState(false);
@@ -49,13 +48,6 @@ export default function Slice() {
   // By hand, snap to the exact middle, where the corner-first slice is a perfect octahedron.
   const s = !playing && Math.abs(free - k / 2) < 0.015 ? k / 2 : free;
 
-  useRaf((dt) => {
-    let next = free + dir.current * dt * (k / SWEEP_SECONDS);
-    if (next >= k - EPS) [next, dir.current] = [k - EPS, -1];
-    if (next <= EPS) [next, dir.current] = [EPS, 1];
-    setS(next);
-  }, playing);
-
   const slice = useMemo(() => {
     const sec = section(normal, s);
     const p3 = flatten(sec.points, normal);
@@ -63,7 +55,7 @@ export default function Slice() {
     return { sec, p3, faces, name: shapeName(sec, p3), vol: volume(p3, faces) };
   }, [lead, s]);
 
-  const { ref } = useCanvas(
+  const { ref, visible } = useCanvas(
     (ctx, size) => {
       const { w, h } = size;
       const side = w / h >= 1.2; // side by side when wide, stacked on phones
@@ -85,7 +77,7 @@ export default function Slice() {
       const tp = TESSERACT.verts.map((v) => camL(perspective(centered(v), W_CAMERA)));
       drawWire(ctx, tp, TESSERACT.edges, { width: 1.5, color: C.muted, far: 0.15 });
       const sp = slice.sec.points.map((v) => camL(perspective(centered(v), W_CAMERA)));
-      drawFaces(ctx, sp, slice.faces, alpha(blue, 0.12));
+      drawFaces(ctx, sp, slice.faces, blue, 0.14);
       drawWire(ctx, sp, slice.sec.edges.map(([a, b]) => ({ a, b, axis: 3 })), { width: 2, color: blue, glowBlur: 8, far: 0.6 });
       tp.forEach((p, i) => {
         const passed = slice.sec.side[i] <= 0;
@@ -95,66 +87,77 @@ export default function Slice() {
       // Right: the slice on its own, as a 3D being would meet it. Fixed scale, so growth is real.
       const camR = camera(orbit, right.cx, right.cy, unit * 0.34);
       const rp = slice.p3.map(camR);
-      drawFaces(ctx, rp, slice.faces, alpha(blue, 0.14));
+      drawFaces(ctx, rp, slice.faces, blue, 0.22);
       drawWire(ctx, rp, slice.sec.edges.map(([a, b]) => ({ a, b, axis: 3 })), { width: 2.5, color: blue, glowBlur: 12, far: 0.4 });
-      for (const p of rp) glowDot(ctx, p.x, p.y, 2.5, C.ink, 6);
+      depthDots(ctx, rp, 3, C.ink);
 
-      ctx.font = `13px ${FONT_MONO}`;
-      ctx.textBaseline = "top";
-      colorText(ctx, [[`${formula(lead)} = ${fmt(s, 2)}`, C.muted]], 16, 14);
-      const rx = side ? pw + 16 : 16;
-      const ry = side ? 14 : ph + 14;
-      colorText(ctx, [[slice.name, blue]], rx, ry);
+      // View captions, centred in each half so they stay clear of the overlays.
       ctx.font = `11px ${FONT_MONO}`;
-      ctx.textBaseline = "bottom";
-      colorText(ctx, [["the tesseract’s shadow", C.muted]], 16, ph - 12);
-      colorText(ctx, [["the slice we would see", C.muted]], rx, h - 12);
+      ctx.textBaseline = "top";
+      ctx.textAlign = "center";
+      ctx.fillStyle = C.muted;
+      ctx.fillText("the tesseract’s shadow", left.cx, side ? 52 : ph - 24);
+      ctx.fillStyle = blue;
+      ctx.fillText(`the slice we would see: ${slice.name.toLowerCase()}`, right.cx, side ? 52 : ph + 12);
     },
     [slice, orbit],
   );
 
+  useRaf((dt) => {
+    let next = free + dir.current * dt * (k / SWEEP_SECONDS);
+    if (next >= k - EPS) [next, dir.current] = [k - EPS, -1];
+    if (next <= EPS) [next, dir.current] = [EPS, 1];
+    setS(next);
+  }, playing, visible);
+
+
   const { sec, name, vol } = slice;
 
+  const sweep = (l: Lead, at?: number) => () => {
+    setLead(l);
+    dir.current = 1;
+    if (at !== undefined) {
+      setPlaying(false);
+      setS(at);
+    } else {
+      setS(EPS);
+      if (!prefersReducedMotion()) setPlaying(true);
+    }
+  };
+
   return (
-    <div className="viz">
-      <div className="viz-head">
-        <span className="viz-title">Slice it with our 3D space</span>
-        <Legend
-          items={[
-            { color: "blue", label: "the slice" },
-            { color: "ink", label: "corners the cut has passed" },
-            { color: "muted", label: "tesseract edges" },
-          ]}
+    <Workspace
+      title="Slice it with our 3D space"
+      tab="Slice"
+      legend={[
+        { color: "blue", label: "the slice" },
+        { color: "ink", label: "corners passed" },
+        { color: "muted", label: "tesseract edges" },
+      ]}
+      stage={
+        <canvas
+          ref={ref}
+          className={`stage ${dragging ? "grabbing" : "grab"}`}
+          {...handlers}
+          role="img"
+          aria-label={`Slicing the tesseract ${lead} first at ${formula(lead)} = ${fmt(s, 2)}. The slice is a ${name}.`}
         />
-      </div>
-      <canvas
-        ref={ref}
-        className={`stage ar-split ${dragging ? "grabbing" : "grab"}`}
-        {...handlers}
-        role="img"
-        aria-label={`Slicing the tesseract ${lead} first at ${formula(lead)} = ${fmt(s, 2)}. The slice is a ${name}.`}
-      />
-      <div className="viz-body">
-        <p className="hint">Push the tesseract through our space. Drag the picture to turn both views.</p>
-        <div className="controls">
-          <Segmented
-            label="Goes in first"
-            value={lead}
-            options={LEAD_IDS.map((l) => ({ value: l, label: LEAD_LABELS[l] }))}
-            onChange={setLead}
-          />
-          <PlayControls
-            playing={playing}
-            onPlay={() => (prefersReducedMotion() ? setS(Math.min(k - EPS, s + k / 8)) : setPlaying(!playing))}
-            onReset={() => {
-              setPlaying(false);
-              dir.current = 1;
-              setS(DEFAULT_S);
-            }}
-            playLabel={prefersReducedMotion() ? "Step" : "Sweep"}
-          />
-        </div>
-        <div className="controls">
+      }
+      status={{ text: `${formula(lead)} = ${fmt(s, 2)}`, color: C.blue }}
+      coach="Drag to turn both views"
+      transport={{
+        playing,
+        playLabel: prefersReducedMotion() ? "Step" : "Sweep",
+        onPlay: () => (prefersReducedMotion() ? setS(Math.min(k - EPS, s + k / 8)) : setPlaying(!playing)),
+        onReset: () => {
+          setPlaying(false);
+          dir.current = 1;
+          setS(DEFAULT_S);
+        },
+      }}
+      controls={
+        <>
+          <Segmented label="Goes in first" value={lead} options={LEAD_IDS.map((l) => ({ value: l, label: LEAD_LABELS[l] }))} onChange={setLead} />
           <Slider
             label={`Cut at ${formula(lead)} =`}
             value={s}
@@ -168,17 +171,22 @@ export default function Slice() {
             format={(v) => fmt(v, 2)}
             color="blue"
           />
-        </div>
-        <Readout
-          items={[
-            { label: "slice", value: name, color: "blue" },
-            { label: "corners", value: String(sec.points.length) },
-            { label: "edges", value: String(sec.edges.length) },
-            { label: "faces", value: String(sec.faces.length) },
-            { label: "volume", value: fmt(vol, 3) },
-          ]}
-        />
-      </div>
-    </div>
+        </>
+      }
+      stats={[
+        { label: "corners", value: String(sec.points.length) },
+        { label: "faces", value: String(sec.faces.length) },
+        { label: "volume", value: fmt(vol, 3) },
+      ]}
+      insight={sliceInsight(lead, s, k, name)}
+      tries={[
+        { label: "Cube first", apply: sweep("cube") },
+        { label: "Corner first", apply: sweep("corner") },
+        { label: "The octahedron", apply: sweep("corner", 2) },
+        { label: "Edge first", apply: sweep("edge") },
+        { label: "Square first", apply: sweep("square") },
+      ]}
+      explain={explain}
+    />
   );
 }

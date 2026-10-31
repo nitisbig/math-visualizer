@@ -13,9 +13,11 @@ interface Props {
   description?: string;
   /** Share image path under public/, 1200×630. */
   image?: string;
+  /** Concept pages: on phones the top bar becomes an app bar (back + this title). */
+  appTitle?: string;
 }
 
-const { title, description = SITE.description, image = "/og/site.png" } = Astro.props;
+const { title, description = SITE.description, image = "/og/site.png", appTitle } = Astro.props;
 const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -24,7 +26,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
@@ -40,10 +42,19 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="twitter:card" content="summary_large_image" />
     <Analytics />
   </head>
-  <body>
+  <body class:list={{ "has-app": !!appTitle }}>
     <a class="skip" href="#main">Skip to content</a>
     <header class="site-header">
       <div class="wrap bar">
+        {
+          appTitle && (
+            <a href="/" class="back" aria-label="All concepts">
+              <svg viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
+          )
+        }
         <a href="/" class="brand" aria-label={`${SITE.name} home`}>
           <svg viewBox="0 0 24 24" aria-hidden="true" class="mark">
             <path d="M2 18 C 7 18, 8 6, 12 6 S 17 18, 22 18" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" />
@@ -51,9 +62,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
           </svg>
           <span>{SITE.name}</span>
         </a>
+        {appTitle && <span class="app-title">{appTitle}</span>}
         <nav aria-label="Main">
-          <a href="/#concepts">Concepts</a>
-          <a href={SITE.youtube} rel="noopener" target="_blank">YouTube ↗</a>
+          <a href="/#concepts" class="nav-text">Concepts</a>
+          <a href={SITE.youtube} rel="noopener" target="_blank" class="yt-link" aria-label="YouTube channel">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z" />
+            </svg>
+          </a>
         </nav>
       </div>
     </header>
@@ -62,8 +78,8 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     </main>
     <footer class="site-footer">
       <div class="wrap">
-        <p>{SITE.name} · Interactive companion to the videos.</p>
-        <a href={SITE.youtube} rel="noopener" target="_blank">Watch on YouTube ↗</a>
+        <p>{SITE.name}</p>
+        <a href={SITE.youtube} rel="noopener" target="_blank">YouTube ↗</a>
       </div>
     </footer>
   </body>
@@ -86,16 +102,17 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   .site-header {
     position: sticky;
     top: 0;
-    z-index: 5;
-    background: rgba(0, 0, 0, 0.82);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--grid);
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.72);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    border-bottom: 1px solid var(--hair);
   }
   .bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
+    max-width: var(--max-wide);
     height: 56px;
   }
   .brand {
@@ -104,41 +121,62 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     gap: 10px;
     text-decoration: none;
     font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: 0.01em;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.005em;
   }
   .mark {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
+  }
+  .back,
+  .app-title {
+    display: none;
   }
   nav {
     display: flex;
-    gap: 20px;
-    font-size: 14px;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    font-size: 13.5px;
   }
   nav a {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
     color: var(--muted);
     text-decoration: none;
-    transition: color 0.2s;
+    transition: color 0.2s, background 0.2s;
   }
   nav a:hover {
     color: var(--ink);
+    background: rgba(255, 255, 255, 0.06);
+  }
+  .yt-link {
+    padding: 0 8px;
+  }
+  .yt-link svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
   }
   main {
-    min-height: calc(100vh - 56px - 120px);
+    min-height: calc(100vh - 56px - 96px);
   }
   .site-footer {
-    border-top: 1px solid var(--grid);
-    margin-top: 96px;
-    padding: 32px 0 48px;
+    margin-top: 64px;
+    padding: 28px 0 40px;
+    border-top: 1px solid var(--hair);
     font-size: 13px;
     color: var(--muted);
   }
   .site-footer .wrap {
     display: flex;
-    flex-wrap: wrap;
     justify-content: space-between;
     gap: 8px;
+    max-width: var(--max-wide);
   }
   .site-footer p {
     margin: 0;
@@ -149,5 +187,43 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   }
   .site-footer a:hover {
     color: var(--ink);
+  }
+
+  /* Phones on a concept page: app bar + no footer (the tab bar takes the bottom). */
+  @media (max-width: 767px) {
+    .bar {
+      height: var(--appbar);
+    }
+    .has-app .brand,
+    .has-app .nav-text,
+    .has-app .site-footer {
+      display: none;
+    }
+    .has-app .back {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      margin-left: -8px;
+      border-radius: 50%;
+      color: var(--ink);
+    }
+    .has-app .back svg {
+      width: 18px;
+      height: 18px;
+    }
+    .has-app .app-title {
+      display: block;
+      min-width: 0;
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .has-app main {
+      min-height: 0;
+    }
   }
 </style>

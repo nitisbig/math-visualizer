@@ -13,47 +13,46 @@ import Build from "../../visualizers/fourth-dimension/Build";
 import Rotate4D from "../../visualizers/fourth-dimension/Rotate4D";
 import Slice from "../../visualizers/fourth-dimension/Slice";
 
-<Build client:visible />
-
-## What you’re seeing
+<Build client:visible>
+<div slot="explain">
 
 1. A dimension is one more number you need to say where something is. Each new number gets its own direction: <span class="c-x">x</span>, <span class="c-y">y</span>, <span class="c-z">z</span>, and then <span class="c-blue">w</span>, at right angles to all three.
-2. Every **drag** copies the shape and joins each old corner to its copy. So the corners double (1, 2, 4, 8, 16), and the edges follow **2E + V**: the edges of both copies, plus one new edge for every corner that moved.
+2. Every **drag** copies the shape and joins each old corner to its copy. So the corners double (1, 2, 4, 8, 16), and the edges follow **2E + V**.
 3. The last drag goes along <span class="c-blue">w</span>, the direction we can’t see. The picture is drawn **in perspective along w**: the copy with the larger w is closer to a 4D camera, so it looks bigger. That’s why a tesseract looks like a cube inside a cube.
-4. Turn on **corner coordinates**. Every corner is just four 0s and 1s. Sixteen combinations, sixteen corners.
+4. Turn on **corner coordinates**: every corner is just four 0s and 1s. Sixteen combinations, sixteen corners.
 
 <Equation tex={String.raw`\sqrt{\textcolor{#FF5A4E}{1^2} + \textcolor{#FF9F3D}{1^2} + \textcolor{#FFD17E}{1^2} + \textcolor{#5FB6FF}{1^2}} = \sqrt{4} = 2`} caption="Pythagoras doesn’t stop at three: the tesseract’s long diagonal is exactly 2." />
 
-## Rotate it
+</div>
+</Build>
 
-In 3D we say an object spins *around an axis*. But when a cube spins around a vertical rod, its height never changes. Only the other two coordinates mix. Rotation really happens **in a plane**, and the axis is just what’s left over. With four axes there are six planes to turn in.
+<Rotate4D client:visible>
+<div slot="explain">
 
-<Rotate4D client:visible />
+In 3D we say an object spins *around an axis*, but when a cube spins around a vertical rod its height never changes. Only the other two coordinates mix. Rotation really happens **in a plane**, and with four axes there are six planes to turn in.
 
-<Equation tex={String.raw`\begin{pmatrix} \textcolor{#FF5A4E}{x'} \\ \textcolor{#FF9F3D}{y'} \\ \textcolor{#FFD17E}{z'} \\ \textcolor{#5FB6FF}{w'} \end{pmatrix} = \begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & \cos\theta & -\sin\theta \\ 0 & 0 & \sin\theta & \cos\theta \end{pmatrix} \begin{pmatrix} \textcolor{#FF5A4E}{x} \\ \textcolor{#FF9F3D}{y} \\ \textcolor{#FFD17E}{z} \\ \textcolor{#5FB6FF}{w} \end{pmatrix}`} caption="The zw rotation: x and y pass straight through, and z and w mix with the same cos and sin as in 2D." />
+<Equation tex={String.raw`\begin{pmatrix} \textcolor{#FF5A4E}{x'} \\ \textcolor{#FF9F3D}{y'} \\ \textcolor{#FFD17E}{z'} \\ \textcolor{#5FB6FF}{w'} \end{pmatrix} = \begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & \cos\theta & -\sin\theta \\ 0 & 0 & \sin\theta & \cos\theta \end{pmatrix} \begin{pmatrix} \textcolor{#FF5A4E}{x} \\ \textcolor{#FF9F3D}{y} \\ \textcolor{#FFD17E}{z} \\ \textcolor{#5FB6FF}{w} \end{pmatrix}`} caption="The zw rotation: x and y pass straight through." />
 
-### Things to try
-
-- **zw:** the inner cube grows, the outer cube shrinks, and they pass through each other. It looks like the tesseract turns inside out, but nothing bends. The 4D edge lengths stay at 1.000 and det R = 1. Only the shadow stretches.
-- **xy with a straight shadow:** dropping w puts every corner exactly on top of another. The <span class="c-blue">w edges</span> shrink to nothing and you see a plain cube. That’s why the picture uses perspective instead.
-- **xy + zw:** a **double rotation**, impossible in 3D. Turn on trails: every corner travels a circle, and the only point that stays still is the very centre.
-- **Camera distance d:** move the 4D camera closer and the inner and outer cubes pull further apart.
+- **zw:** the inner cube grows, the outer cube shrinks, and they pass through each other. Nothing bends: the 4D edge lengths stay at 1 and det R = 1. Only the shadow stretches.
+- **xy with a straight shadow:** dropping w puts every corner on top of another, so you see a plain cube. That’s why the picture uses perspective.
+- **xy + zw:** a **double rotation**, impossible in 3D. Every corner travels a circle; only the centre stays still.
 
 <Equation tex={String.raw`x' = \frac{d}{d - \textcolor{#5FB6FF}{w}}\,x`} caption="Perspective along w: points with a large w come closer and grow." />
 
-## Slice it
+</div>
+</Rotate4D>
 
-A flat creature living on a sheet of paper never sees a ball fall through its world. It sees a dot appear, grow into a circle, shrink and vanish: one slice at a time. We would meet a tesseract the same way, as a 3D solid changing shape while it passes through our space. (Playing a video is the same thing one level down: each frame is a slice of a block of space and time.)
+<Slice client:visible>
+<div slot="explain">
 
-<Slice client:visible />
+A flat creature on a sheet of paper never sees a ball fall through its world. It sees a dot appear, grow into a circle, shrink and vanish: one slice at a time. We would meet a tesseract the same way, as a 3D solid changing shape while it passes through our space.
 
-- **Cube first:** every slice is the same unit cube. This is the boring way in.
-- **Corner first:** a tiny tetrahedron appears. Its corners get clipped, and at the exact middle it becomes a perfect **octahedron**, two pyramids glued base to base. Then it all plays in reverse.
+- **Cube first:** every slice is the same unit cube.
+- **Corner first:** a tiny tetrahedron appears; at the exact middle it becomes a perfect **octahedron**, then it all plays in reverse.
 - **Edge first:** a thin triangular prism that turns into a hexagonal prism.
 - **Square first:** a box that stretches to 1 × 1 × √2 and back.
 
-Same object, completely different slices, depending only on its angle.
-
 <Equation tex={String.raw`\textcolor{#FF5A4E}{x} + \textcolor{#FF9F3D}{y} + \textcolor{#FFD17E}{z} + \textcolor{#5FB6FF}{w} = s`} caption="The corner-first cut: a flat 3D space tilted equally toward all four axes." />
 
-Your eyes stop at three dimensions. Linear algebra doesn’t: the same vectors, matrices and lengths work in four dimensions, or in four thousand.
+</div>
+</Slice>

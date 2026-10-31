@@ -1,14 +1,13 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { dotGrid, prefersReducedMotion, useCanvas, useRaf } from "../../lib/canvas";
 import { fmt } from "../../lib/format";
 import { C, FONT_MONO, alpha } from "../../lib/theme";
 import { bool, oneOf, useUrlNumber, useUrlState } from "../../lib/urlState";
-import Legend from "../../components/ui/Legend";
-import PlayControls from "../../components/ui/PlayControls";
-import Readout from "../../components/ui/Readout";
 import Segmented from "../../components/ui/Segmented";
 import Slider from "../../components/ui/Slider";
 import Toggle from "../../components/ui/Toggle";
+import Workspace from "../../components/ui/Workspace";
+import { rotateInsight } from "./insights";
 import {
   AXES,
   PLANES,
@@ -24,10 +23,9 @@ import {
   perspective,
   rotation,
   type Mat4,
-  type Plane,
   type Vec4,
 } from "./math";
-import { AXIS_COLORS, AXIS_TOKENS, colorText, drawWire, glowDot, useOrbit } from "./view";
+import { AXIS_COLORS, AXIS_TOKENS, colorText, depthDots, drawWire, useOrbit } from "./view";
 
 const TAU = Math.PI * 2;
 const SPEED = 0.6; // radians per second
@@ -49,11 +47,6 @@ const matrixFor = (mode: Mode, theta: number): Mat4 =>
 /** The axes a mode mixes; the rest stay put. */
 const mixed = (mode: Mode) => (mode === "double" ? [0, 1, 2, 3] : [axisIndex(mode[0]), axisIndex(mode[1])]);
 
-const planeRuns = (p: Plane): [string, string][] => [
-  [p[0], AXIS_COLORS[axisIndex(p[0])]],
-  [p[1], AXIS_COLORS[axisIndex(p[1])]],
-];
-
 function fixedSet(mode: Mode, theta: number) {
   if (Math.abs(Math.sin(theta / 2)) < 1e-9) return "everything (θ = 0)";
   if (mode === "double") return "only the centre";
@@ -61,7 +54,7 @@ function fixedSet(mode: Mode, theta: number) {
   return `the whole ${rest} plane`;
 }
 
-export default function Rotate4D() {
+export default function Rotate4D({ explain }: { explain?: ReactNode }) {
   const [mode, setMode] = useUrlState<Mode>("plane", "zw", oneOf(MODES));
   const [proj, setProj] = useUrlState<Proj>("proj", "persp", oneOf(PROJ));
   const [d, setD] = useUrlNumber("d", 2.2, 1.5, 6);
@@ -70,7 +63,6 @@ export default function Rotate4D() {
   const [playing, setPlaying] = useState(false);
   const { orbit, dragging, handlers } = useOrbit({ yaw: -0.6, pitch: 0.42 });
 
-  useRaf((dt) => setTheta((t) => (t + dt * SPEED) % TAU), playing);
 
   const M = matrixFor(mode, theta);
   const shadow = (v: Vec4) => (proj === "persp" ? perspective(v, d) : orthographic(v));
@@ -79,7 +71,7 @@ export default function Rotate4D() {
   const shadow3 = moved.map(shadow);
   const lens3 = EDGES.map((e) => dist(shadow3[e.a], shadow3[e.b]));
 
-  const { ref } = useCanvas(
+  const { ref, visible } = useCanvas(
     (ctx, size) => {
       const { w, h } = size;
       const unit = Math.min(w, h) * 0.3;
@@ -108,23 +100,16 @@ export default function Rotate4D() {
         });
       }
 
-      drawWire(ctx, pts, EDGES, { width: 2, glowBlur: 8 });
-      for (const p of pts) glowDot(ctx, p.x, p.y, 2.5, C.ink, 4);
-
-      ctx.font = `13px ${FONT_MONO}`;
-      ctx.textBaseline = "top";
-      const x = colorText(ctx, [["rotating in ", C.muted]], 16, 14);
-      if (mode === "double") colorText(ctx, [...planeRuns("xy"), [" + ", C.muted], ...planeRuns("zw")], x, 14);
-      else colorText(ctx, planeRuns(mode), x, 14);
-      colorText(ctx, [[proj === "persp" ? `perspective, d = ${fmt(d, 1)}` : "straight shadow: drop w", C.muted]], 16, 34);
+      drawWire(ctx, pts, EDGES, { width: 2.2, glowBlur: 8 });
+      depthDots(ctx, pts, 3, C.ink);
 
       // Edge lengths: the shadow's edges stretch (bars), the real 4D edges stay at 1 (line).
-      // Phones get only the readout; the strip would cover the shape.
+      // Bottom-right, clear of the transport. Phones get only the readout.
       if (w < 520) return;
-      const bw = Math.min(5, (w * 0.4) / EDGES.length);
-      const bh = Math.min(44, h * 0.14);
-      const x0 = 16;
-      const y0 = h - 30;
+      const bw = Math.min(5, (w * 0.32) / EDGES.length);
+      const bh = Math.min(44, h * 0.12);
+      const x0 = w - EDGES.length * (bw + 1.5) - 110;
+      const y0 = h - 34;
       const max = 1.8;
       lens3.forEach((len, i) => {
         ctx.fillStyle = alpha(AXIS_COLORS[EDGES[i].axis], 0.45);
@@ -147,48 +132,55 @@ export default function Rotate4D() {
     [mode, proj, d, trail, theta, orbit],
   );
 
+  useRaf((dt) => setTheta((t) => (t + dt * SPEED) % TAU), playing, visible);
+
   const on = new Set(mixed(mode));
   const [lo3, hi3] = [Math.min(...lens3), Math.max(...lens3)];
   const [lo4, hi4] = [Math.min(...true4), Math.max(...true4)];
 
+  const turn = (m: Mode, extra?: () => void) => () => {
+    setMode(m);
+    extra?.();
+    if (!prefersReducedMotion()) setPlaying(true);
+  };
+  const planeLabel = mode === "double" ? "xy + zw" : mode;
+
   return (
-    <div className="viz">
-      <div className="viz-head">
-        <span className="viz-title">Rotate it in four dimensions</span>
-        <Legend
-          items={[
-            ...AXES.map((a, i) => ({ color: AXIS_TOKENS[i], label: `${a} edges` })),
-            ...(trail ? [{ color: "ink" as const, label: "corner trails" }] : []),
-          ]}
+    <Workspace
+      title="Rotate it in four dimensions"
+      tab="Rotate"
+      legend={[
+        ...AXES.map((a, i) => ({ color: AXIS_TOKENS[i], label: `${a} edges` })),
+        ...(trail ? [{ color: "ink" as const, label: "corner trails" }] : []),
+      ]}
+      stage={
+        <canvas
+          ref={ref}
+          className={`stage ${dragging ? "grabbing" : "grab"}`}
+          {...handlers}
+          role="img"
+          aria-label={`The shadow of a tesseract rotating in the ${mode === "double" ? "xy and zw planes at once" : `${mode} plane`}, angle ${Math.round((theta * 180) / Math.PI)} degrees.`}
         />
-      </div>
-      <canvas
-        ref={ref}
-        className={`stage ar-wide ${dragging ? "grabbing" : "grab"}`}
-        {...handlers}
-        role="img"
-        aria-label={`The shadow of a tesseract rotating in the ${mode === "double" ? "xy and zw planes at once" : `${mode} plane`}, angle ${Math.round((theta * 180) / Math.PI)} degrees.`}
-      />
-      <div className="viz-body">
-        <p className="hint">Pick a plane and press play. Dragging the picture is an ordinary 3D turn of the shadow.</p>
-        <div className="controls">
+      }
+      status={{ text: `Rotating in ${planeLabel} · ${Math.round((theta * 180) / Math.PI)}°`, color: C.ink }}
+      coach="Drag the picture for a 3D turn"
+      transport={{
+        playing,
+        playLabel: prefersReducedMotion() ? "Turn 45°" : "Play",
+        onPlay: () => (prefersReducedMotion() ? setTheta((t) => (t + Math.PI / 4) % TAU) : setPlaying(!playing)),
+        onReset: () => {
+          setPlaying(false);
+          setTheta(START_ANGLE);
+        },
+      }}
+      controls={
+        <>
           <Segmented
             label="Rotation plane"
             value={mode}
             options={MODES.map((m) => ({ value: m, label: m === "double" ? "xy + zw" : m }))}
             onChange={setMode}
           />
-          <PlayControls
-            playing={playing}
-            onPlay={() => (prefersReducedMotion() ? setTheta((t) => (t + Math.PI / 4) % TAU) : setPlaying(!playing))}
-            onReset={() => {
-              setPlaying(false);
-              setTheta(START_ANGLE);
-            }}
-            playLabel={prefersReducedMotion() ? "Turn 45°" : "Play"}
-          />
-        </div>
-        <div className="controls">
           <Slider
             label="Angle θ"
             value={theta}
@@ -201,6 +193,10 @@ export default function Rotate4D() {
             }}
             format={(v) => `${Math.round((v * 180) / Math.PI)}°`}
           />
+        </>
+      }
+      more={
+        <>
           <Segmented
             label="Shadow"
             value={proj}
@@ -214,8 +210,15 @@ export default function Rotate4D() {
             <Slider label="Camera distance d" value={d} min={1.5} max={6} step={0.01} onChange={setD} format={(v) => fmt(v, 2)} color="blue" />
           )}
           <Toggle label="Corner trails" checked={trail} onChange={setTrail} />
-        </div>
-        <div className="mat-wrap">
+        </>
+      }
+      stats={[
+        { label: "4D edges", value: hi4 - lo4 < 1e-9 ? `all ${fmt(lo4, 3)}` : `${fmt(lo4, 3)}–${fmt(hi4, 3)}` },
+        { label: "shadow edges", value: `${fmt(lo3, 2)}–${fmt(hi3, 2)}` },
+        { label: "det R", value: fmt(det(M), 3) },
+      ]}
+      detail={
+        <figure className="mat-wrap">
           <table className="mat mono" aria-label="Rotation matrix acting on (x, y, z, w)">
             <thead>
               <tr>
@@ -238,19 +241,23 @@ export default function Rotate4D() {
               ))}
             </tbody>
           </table>
-          <p className="mat-note">
-            The matrix R. Only the highlighted rows and columns mix; every other axis passes through unchanged.
-          </p>
-        </div>
-        <Readout
-          items={[
-            { label: "4D edge lengths", value: hi4 - lo4 < 1e-9 ? `${fmt(lo4, 3)} (all 32)` : `${fmt(lo4, 3)}–${fmt(hi4, 3)}` },
-            { label: "shadow edge lengths", value: `${fmt(lo3, 2)}–${fmt(hi3, 2)}` },
-            { label: "det R", value: fmt(det(M), 3) },
-            { label: "stays fixed", value: fixedSet(mode, theta) },
-          ]}
-        />
-      </div>
-    </div>
+          <figcaption className="mat-note">Rotation matrix R. Only the highlighted entries mix; {fixedSet(mode, theta)} stays fixed.</figcaption>
+        </figure>
+      }
+      insight={rotateInsight(mode, proj, lo3, hi3)}
+      tries={[
+        { label: "Turn inside out: zw", apply: turn("zw", () => setProj("persp")) },
+        { label: "xy, straight shadow", apply: turn("xy", () => setProj("ortho")) },
+        { label: "Double rotation + trails", apply: turn("double", () => setTrail(true)) },
+        {
+          label: "Camera close: d = 1.6",
+          apply: turn(mode, () => {
+            setProj("persp");
+            setD(1.6);
+          }),
+        },
+      ]}
+      explain={explain}
+    />
   );
 }
