@@ -1,5 +1,5 @@
-import { useEffect, useRef, type DependencyList } from "react";
-import { alpha } from "./theme";
+import { useEffect, useReducer, useRef, type DependencyList } from "react";
+import { C, alpha, onThemeChange, themeName } from "./theme";
 
 export type Size = { w: number; h: number };
 
@@ -10,6 +10,7 @@ export type DrawFn = (ctx: CanvasRenderingContext2D, size: Size) => void;
 /**
  * A DPR-aware canvas that redraws on resize and whenever `deps` change.
  * Size it with CSS (width: 100% + aspect-ratio); drawing happens in CSS pixels.
+ * A theme switch re-renders the owner (so colors picked at render time update) and repaints.
  */
 export function useCanvas(draw: DrawFn, deps: DependencyList) {
   const ref = useRef<HTMLCanvasElement>(null);
@@ -19,6 +20,15 @@ export function useCanvas(draw: DrawFn, deps: DependencyList) {
   // Off-screen canvases skip painting and catch up when they scroll back in.
   const visible = useRef(true);
   const dirty = useRef(false);
+  const [theme, bump] = useReducer((n: number) => n + 1, 0);
+  useEffect(
+    () =>
+      onThemeChange(() => {
+        paint();
+        bump();
+      }),
+    [],
+  );
 
   const paint = () => {
     const canvas = ref.current;
@@ -60,19 +70,19 @@ export function useCanvas(draw: DrawFn, deps: DependencyList) {
     };
   }, []);
 
-  useEffect(paint, deps);
+  useEffect(paint, [...deps, theme]);
 
   return { ref, size: sizeRef, redraw: paint, visible };
 }
 
 /**
  * Caches a static layer (grid, axes, a curve, a field) in an offscreen canvas.
- * `draw(ctx, key, size, render)` re-renders only when `key` or the size changes.
+ * `draw(ctx, key, size, render)` re-renders only when `key`, the size or the theme changes.
  */
 export function useLayer() {
   const cache = useRef<{ key: string; img: HTMLCanvasElement } | null>(null);
   return (ctx: CanvasRenderingContext2D, key: string, size: Size, render: DrawFn) => {
-    const k = `${key}:${size.w}x${size.h}`;
+    const k = `${key}:${size.w}x${size.h}:${themeName()}`;
     if (cache.current?.key !== k) {
       const dpr = dprOf();
       const img = cache.current?.img ?? document.createElement("canvas");
@@ -168,7 +178,7 @@ export function ball(ctx: CanvasRenderingContext2D, x: number, y: number, r: num
   ctx.fillStyle = body;
   dot(ctx, x, y, r);
   ctx.save();
-  ctx.strokeStyle = "#FFFFFF";
+  ctx.strokeStyle = C.rim;
   ctx.globalAlpha = 0.9;
   ctx.lineWidth = 1.5;
   ctx.beginPath();
@@ -222,7 +232,7 @@ export function arrow(
 }
 
 /** Dot grid, the only allowed background texture. */
-export function dotGrid(ctx: CanvasRenderingContext2D, { w, h }: Size, spacing = 32, color = "rgba(248,250,252,0.16)") {
+export function dotGrid(ctx: CanvasRenderingContext2D, { w, h }: Size, spacing = 32, color = C.dot) {
   ctx.fillStyle = color;
   for (let x = spacing / 2; x < w; x += spacing) {
     for (let y = spacing / 2; y < h; y += spacing) {

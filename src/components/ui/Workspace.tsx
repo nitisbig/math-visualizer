@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { C, type Token } from "../../lib/theme";
+import { cssVar, toCss, type Token } from "../../lib/theme";
 import Legend, { type LegendItem } from "./Legend";
 import PlayControls, { type PlayProps } from "./PlayControls";
 import Readout, { type ReadoutItem } from "./Readout";
@@ -110,7 +110,7 @@ export default function Workspace(p: Props) {
   const [view, setView] = useState<"controls" | "explain">("controls");
   const [open, setOpen] = useState(false);
   const [coach, dismissCoach] = useCoach(id, !!p.coach);
-  const statusColor = p.status?.color ? (C[p.status.color as Token] ?? p.status.color) : C.muted;
+  const statusColor = toCss(p.status?.color ?? "muted");
   const touch = useTouchGlow();
 
   const toggleExplain = () => {
@@ -123,7 +123,7 @@ export default function Workspace(p: Props) {
     <section className="ws" id={id} data-workspace data-tab={p.tab} data-title={p.title} aria-labelledby={`${id}-t`}>
       <div
         className="ws-stage"
-        style={{ "--accent": C[p.accent ?? "cyan"] } as React.CSSProperties}
+        style={{ "--accent": cssVar(p.accent ?? "cyan") } as React.CSSProperties}
         onPointerDownCapture={dismissCoach}
         {...touch.handlers}
       >

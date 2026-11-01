@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { arrow, ball, dot, glow, pointerPos, scale, useCanvas, useLayer, useRaf, type Size } from "../../lib/canvas";
 import { contours } from "../../lib/contours";
 import { fmt, fmtSig } from "../../lib/format";
-import { C, alpha } from "../../lib/theme";
+import { C, alpha, themeName } from "../../lib/theme";
 import { oneOf, useUrlNumber, useUrlState } from "../../lib/urlState";
 import Segmented from "../../components/ui/Segmented";
 import Slider from "../../components/ui/Slider";
@@ -49,7 +49,8 @@ function renderSurface(ctx: CanvasRenderingContext2D, fn: Fn2, size: Size) {
     }
   }
 
-  // Low-res relief: height → navy-to-cyan ramp, lit from the top-left (hillshade).
+  // Low-res relief: height → navy-to-cyan ramp (light: porcelain-to-cyan), lit from the top-left (hillshade).
+  const light = themeName() === "light";
   const heat = document.createElement("canvas");
   heat.width = W;
   heat.height = H;
@@ -65,10 +66,17 @@ function renderSurface(ctx: CanvasRenderingContext2D, fn: Fn2, size: Size) {
       const n = Math.hypot(dx * relief, dy * relief, 1);
       const lam = Math.max(0, (-dx * relief * lx - dy * relief * ly + lz) / n);
       const tt = Math.pow(t, 0.85);
-      const k = (0.06 + 0.3 * Math.pow(tt, 1.3)) * (0.5 + 0.7 * lam) * 1.15;
-      img.data[p * 4] = (10 + 24 * tt) * k;
-      img.data[p * 4 + 1] = (22 + 189 * tt) * k;
-      img.data[p * 4 + 2] = (40 + 198 * tt) * k;
+      if (light) {
+        const k = 0.86 + 0.22 * lam;
+        img.data[p * 4] = (250 - 145 * tt) * k;
+        img.data[p * 4 + 1] = (252 - 68 * tt) * k;
+        img.data[p * 4 + 2] = (254 - 42 * tt) * k;
+      } else {
+        const k = (0.06 + 0.3 * Math.pow(tt, 1.3)) * (0.5 + 0.7 * lam) * 1.15;
+        img.data[p * 4] = (10 + 24 * tt) * k;
+        img.data[p * 4 + 1] = (22 + 189 * tt) * k;
+        img.data[p * 4 + 2] = (40 + 198 * tt) * k;
+      }
       img.data[p * 4 + 3] = 255;
     }
   }
@@ -83,7 +91,7 @@ function renderSurface(ctx: CanvasRenderingContext2D, fn: Fn2, size: Size) {
   segs.forEach((seg, li) => {
     const major = li % 4 === 3;
     ctx.lineWidth = major ? 1.4 : 1;
-    ctx.strokeStyle = alpha(C.cyan, (major ? 0.95 : 0.65) - (li / N) * 0.3);
+    ctx.strokeStyle = alpha(C.cyan, ((major ? 0.95 : 0.65) - (li / N) * 0.3) * (light ? 0.7 : 1));
     ctx.beginPath();
     for (let k = 0; k < seg.length; k += 4) {
       ctx.moveTo(seg[k], seg[k + 1]);
@@ -95,7 +103,7 @@ function renderSurface(ctx: CanvasRenderingContext2D, fn: Fn2, size: Size) {
   // Vignette keeps the eye in the middle.
   const v = ctx.createRadialGradient(size.w / 2, size.h / 2, Math.min(size.w, size.h) * 0.35, size.w / 2, size.h / 2, Math.hypot(size.w, size.h) * 0.6);
   v.addColorStop(0, "rgba(0,0,0,0)");
-  v.addColorStop(1, "rgba(0,0,0,0.35)");
+  v.addColorStop(1, light ? "rgba(16,24,40,0.1)" : "rgba(0,0,0,0.35)");
   ctx.fillStyle = v;
   ctx.fillRect(0, 0, size.w, size.h);
 

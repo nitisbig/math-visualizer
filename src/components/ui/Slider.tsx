@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { C, type Token } from "../../lib/theme";
+import { cssVar, type Token } from "../../lib/theme";
 
 type Props = {
   label: string;
@@ -27,7 +27,7 @@ export default function Slider({ label, value, min, max, onChange, step, log, fo
   const pct = Math.max(0, Math.min(100, ((toTrack(value) - lo) / (hi - lo)) * 100));
 
   return (
-    <div className="ctl slider" style={{ ["--accent" as string]: C[color], ["--pct" as string]: `${pct}%` }}>
+    <div className="ctl slider" style={{ ["--accent" as string]: cssVar(color), ["--pct" as string]: `${pct}%` }}>
       <label htmlFor={id}>
         <span>{label}</span>
         <output htmlFor={id} className="mono">{shown}</output>

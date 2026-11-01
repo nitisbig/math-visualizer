@@ -166,12 +166,12 @@ const counts = Object.fromEntries(CATEGORIES.map((c) => [c, concepts.filter((x) 
     transition: border-color 0.3s var(--ease-out), transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
   }
   .card:hover {
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--hair-3);
     transform: translateY(-3px);
     box-shadow: var(--shadow);
   }
   .thumb-wrap {
-    background: radial-gradient(120% 100% at 50% 0%, #0b1018, #000 70%);
+    background: var(--thumb-bg);
     border-bottom: 1px solid var(--hair);
   }
   .card-body {

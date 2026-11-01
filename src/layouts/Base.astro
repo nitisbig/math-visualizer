@@ -28,6 +28,18 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
+    <script is:inline>
+      // Before first paint: saved choice, else the system preference.
+      (() => {
+        let t = null;
+        try {
+          t = localStorage.getItem("theme");
+        } catch {}
+        if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+        document.documentElement.dataset.theme = t;
+        if (t === "light") document.querySelector('meta[name="theme-color"]').content = "#f4f5f8";
+      })();
+    </script>
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
@@ -70,6 +82,23 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
               <path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3z" />
             </svg>
           </a>
+          <button type="button" class="theme-toggle" data-theme-toggle aria-label="Toggle light and dark theme">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <mask id="tt-bite">
+                <rect width="24" height="24" fill="#fff" />
+                <circle class="tt-bite" cx="15.6" cy="8.6" r="3.9" fill="#000" />
+              </mask>
+              <circle class="tt-core" cx="12" cy="12" r="5" fill="currentColor" mask="url(#tt-bite)" />
+              <path
+                class="tt-rays"
+                d="M12 2.5v2M12 19.5v2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M2.5 12h2M19.5 12h2M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
         </nav>
       </div>
     </header>
@@ -84,6 +113,63 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     </footer>
   </body>
 </html>
+
+<script>
+  const root = document.documentElement;
+  const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  const button = document.querySelector<HTMLButtonElement>("[data-theme-toggle]");
+  type Theme = "light" | "dark";
+
+  const saved = (): string | null => {
+    try {
+      return localStorage.getItem("theme");
+    } catch {
+      return null;
+    }
+  };
+
+  function apply(t: Theme) {
+    root.dataset.theme = t;
+    meta?.setAttribute("content", t === "light" ? "#f4f5f8" : "#000000");
+    button?.setAttribute("aria-label", `Switch to ${t === "light" ? "dark" : "light"} theme`);
+  }
+
+  /** Swap themes; from a click, the new theme spreads as a circle from the button. */
+  function switchTo(t: Theme, from?: HTMLElement) {
+    if (!from || !document.startViewTransition || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      apply(t);
+      return;
+    }
+    const r = from.getBoundingClientRect();
+    const x = r.left + r.width / 2;
+    const y = r.top + r.height / 2;
+    const end = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    root.classList.add("theme-switching");
+    const vt = document.startViewTransition(() => apply(t));
+    vt.ready.then(() =>
+      root.animate(
+        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${end}px at ${x}px ${y}px)`] },
+        { duration: 620, easing: "cubic-bezier(0.65, 0, 0.35, 1)", pseudoElement: "::view-transition-new(root)" },
+      ),
+    );
+    vt.finished.finally(() => root.classList.remove("theme-switching"));
+  }
+
+  apply(root.dataset.theme === "light" ? "light" : "dark");
+
+  button?.addEventListener("click", () => {
+    const next: Theme = root.dataset.theme === "light" ? "dark" : "light";
+    try {
+      localStorage.setItem("theme", next);
+    } catch {}
+    switchTo(next, button);
+  });
+
+  // Follow the system until the reader picks a theme.
+  matchMedia("(prefers-color-scheme: light)").addEventListener("change", (e) => {
+    if (!saved()) switchTo(e.matches ? "light" : "dark");
+  });
+</script>
 
 <style>
   .skip {
@@ -103,7 +189,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     position: sticky;
     top: 0;
     z-index: 20;
-    background: rgba(0, 0, 0, 0.72);
+    background: var(--bar);
     -webkit-backdrop-filter: blur(16px) saturate(140%);
     backdrop-filter: blur(16px) saturate(140%);
     border-bottom: 1px solid var(--hair);
@@ -152,10 +238,69 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
   }
   nav a:hover {
     color: var(--ink);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--hover);
   }
   .yt-link {
     padding: 0 8px;
+  }
+
+  /* Theme toggle: a moon (dark) that opens into a sun (light). */
+  .theme-toggle {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--hair-2);
+    border-radius: 50%;
+    background: var(--s1);
+    color: var(--ink-2);
+    cursor: pointer;
+    box-shadow: 0 1px 0 var(--hover) inset;
+    transition: color 0.2s, background 0.2s, border-color 0.2s, transform 0.15s var(--ease-out);
+  }
+  .theme-toggle:hover {
+    color: var(--ink);
+    border-color: var(--hair-3);
+    background: var(--hover-2);
+  }
+  .theme-toggle:active {
+    transform: scale(0.92);
+  }
+  .theme-toggle svg {
+    width: 17px;
+    height: 17px;
+    overflow: visible;
+  }
+  .tt-core,
+  .tt-bite,
+  .tt-rays {
+    transform-box: view-box;
+    transform-origin: 12px 12px;
+    transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.3s var(--ease-out);
+  }
+  .tt-core {
+    transform: scale(1.7);
+  }
+  .tt-rays {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.5);
+  }
+  :global(html[data-theme="light"]) .tt-core {
+    transform: scale(1);
+  }
+  :global(html[data-theme="light"]) .tt-bite {
+    transform: translate(9px, -9px);
+  }
+  :global(html[data-theme="light"]) .tt-rays {
+    opacity: 1;
+    transform: none;
+  }
+  .theme-toggle:hover .tt-rays {
+    transform: rotate(22deg);
+  }
+  :global(html[data-theme="dark"]) .theme-toggle:hover .tt-core {
+    transform: scale(1.7) rotate(-14deg);
   }
   .yt-link svg {
     width: 18px;

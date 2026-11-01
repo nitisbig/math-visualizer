@@ -23,7 +23,7 @@
   position: relative;
   min-width: 0;
   min-height: 0;
-  background: #000;
+  background: var(--stage);
   overflow: hidden;
 }
 
@@ -35,7 +35,7 @@
   top: 0;
   border-radius: 50%;
   pointer-events: none;
-  mix-blend-mode: screen;
+  mix-blend-mode: var(--glow-blend);
 }
 .touch-glow {
   width: 140px;
@@ -43,7 +43,7 @@
   margin: -70px 0 0 -70px;
   background: radial-gradient(
     circle,
-    rgba(255, 255, 255, 0.9) 0 3px,
+    var(--glow-core, rgba(255, 255, 255, 0.9)) 0 3px,
     color-mix(in srgb, var(--accent) 70%, transparent) 4px,
     color-mix(in srgb, var(--accent) 22%, transparent) 30%,
     transparent 68%
@@ -235,7 +235,7 @@
 }
 .explain-btn:hover {
   background: var(--s3);
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--hair-3);
 }
 .explain-btn.on {
   background: var(--ink);
@@ -326,7 +326,7 @@
 }
 .try:hover {
   color: var(--ink);
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--hair-3);
   background: var(--s2);
 }
 .explain-prose {
@@ -436,10 +436,10 @@
     border: 1px solid var(--hair-2);
     border-bottom: 0;
     border-radius: 20px 20px 0 0;
-    background: rgba(9, 11, 16, 0.9);
+    background: var(--sheet);
     -webkit-backdrop-filter: blur(18px) saturate(140%);
     backdrop-filter: blur(18px) saturate(140%);
-    box-shadow: 0 -16px 40px -12px rgba(0, 0, 0, 0.8);
+    box-shadow: var(--sheet-shadow);
     overflow-y: hidden;
     transform: translateY(max(0px, calc(100% - var(--peek) + var(--dy, 0px))));
     transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1), height 0.3s var(--ease-out);
@@ -473,7 +473,7 @@
     width: 36px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.22);
+    background: var(--handle);
   }
   .ws-head {
     position: static;
@@ -536,7 +536,7 @@
     height: 52px;
     background: var(--ink);
     color: var(--bg);
-    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.8);
+    box-shadow: var(--pop);
   }
   .ws-transport .tbtn.play svg {
     width: 18px;
@@ -581,7 +581,7 @@
   fill: currentColor;
 }
 .tbtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-2);
   color: var(--ink);
 }
 .tbtn:active:not(:disabled) {
@@ -597,7 +597,7 @@
   color: var(--bg);
 }
 .tbtn.play:hover {
-  background: #fff;
+  background: var(--ink-hi);
   color: var(--bg);
 }
 
@@ -639,12 +639,12 @@
 .slider input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  background: linear-gradient(to right, var(--accent) var(--pct, 0%), rgba(255, 255, 255, 0.1) var(--pct, 0%));
+  background: linear-gradient(to right, var(--accent) var(--pct, 0%), var(--track) var(--pct, 0%));
 }
 .slider input[type="range"]::-moz-range-track {
   height: 4px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--track);
 }
 .slider input[type="range"]::-moz-range-progress {
   height: 4px;
@@ -659,7 +659,7 @@
   border: 0;
   border-radius: 50%;
   background: var(--ink);
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.6), 0 0 0 5px var(--accent);
+  box-shadow: 0 0 0 4px var(--knob-ring), 0 0 0 5px var(--accent);
   transition: transform 0.15s var(--ease-out);
 }
 .slider input[type="range"]::-moz-range-thumb {
@@ -668,20 +668,20 @@
   border: 0;
   border-radius: 50%;
   background: var(--ink);
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.6), 0 0 0 5px var(--accent);
+  box-shadow: 0 0 0 4px var(--knob-ring), 0 0 0 5px var(--accent);
 }
 .slider input[type="range"]:active::-webkit-slider-thumb {
   transform: scale(1.15);
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.6), 0 0 0 5px var(--accent), 0 0 20px 4px var(--accent);
+  box-shadow: 0 0 0 4px var(--knob-ring), 0 0 0 5px var(--accent), 0 0 20px 4px var(--accent);
 }
 .slider input[type="range"]:active::-moz-range-thumb {
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.6), 0 0 0 5px var(--accent), 0 0 20px 4px var(--accent);
+  box-shadow: 0 0 0 4px var(--knob-ring), 0 0 0 5px var(--accent), 0 0 20px 4px var(--accent);
 }
 .slider input[type="range"]:focus-visible {
   outline: none;
 }
 .slider input[type="range"]:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.6), 0 0 0 6px var(--blue);
+  box-shadow: 0 0 0 4px var(--knob-ring), 0 0 0 6px var(--blue);
 }
 @media (pointer: coarse) {
   .slider input[type="range"] {
@@ -733,8 +733,8 @@
 }
 .seg label.on {
   color: var(--ink);
-  background: var(--s3);
-  box-shadow: 0 0 0 1px var(--hair-2) inset, 0 1px 2px rgba(0, 0, 0, 0.5);
+  background: var(--raised);
+  box-shadow: 0 0 0 1px var(--hair-2) inset, var(--seg-shadow);
 }
 .seg input {
   position: absolute;
@@ -879,7 +879,7 @@
 }
 .btn:hover:not(:disabled) {
   background: var(--s3);
-  border-color: rgba(255, 255, 255, 0.18);
+  border-color: var(--hair-3);
 }
 .btn:disabled {
   opacity: 0.4;
@@ -899,7 +899,7 @@
 }
 .edigits .hit {
   color: var(--lime);
-  text-shadow: 0 0 18px rgba(43, 255, 110, 0.5);
+  text-shadow: 0 0 18px color-mix(in srgb, var(--lime) 50%, transparent);
 }
 .edigits .miss { color: var(--amber); }
 .edigits .ref {
@@ -936,7 +936,7 @@
 .mat td.zero { color: var(--axis); }
 .mat td.on {
   color: var(--ink);
-  background: rgba(245, 247, 250, 0.05);
+  background: var(--hover);
 }
 .mat-note {
   margin: 0;
@@ -946,8 +946,13 @@
 
 /* Press glow for every control: the part under your finger lights up. */
 :is(.tbtn, .btn, .try, .explain-btn, .seg label):active:not(:disabled) {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.55), 0 0 18px 2px rgba(0, 225, 255, 0.45);
+  box-shadow: 0 0 0 1px var(--press-ring), 0 0 18px 2px var(--press-glow);
 }
 .toggle:active .track {
-  box-shadow: 0 0 0 1px var(--hair-2) inset, 0 0 16px 2px rgba(0, 225, 255, 0.45);
+  box-shadow: 0 0 0 1px var(--hair-2) inset, 0 0 16px 2px var(--press-glow);
+}
+
+/* Light theme: the touch light multiplies instead of screens, so its core takes the accent. */
+:root[data-theme="light"] .touch-glow {
+  --glow-core: var(--accent);
 }

@@ -1,4 +1,4 @@
-import { C, type Token } from "../../lib/theme";
+import { cssVar, type Token } from "../../lib/theme";
 
 export type LegendItem = { color: Token; label: string };
 
@@ -7,7 +7,7 @@ export default function Legend({ items }: { items: LegendItem[] }) {
     <ul className="legend">
       {items.map((it) => (
         <li key={it.label}>
-          <span className="swatch" style={{ background: C[it.color], color: C[it.color] }} />
+          <span className="swatch" style={{ background: cssVar(it.color), color: cssVar(it.color) }} />
           {it.label}
         </li>
       ))}

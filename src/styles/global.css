@@ -85,6 +85,16 @@ a {
 .c-y { color: var(--y); }
 .c-z { color: var(--z); }
 
+/* Theme switch: the new theme is revealed by a clip-path circle (Base.astro), not a crossfade. */
+.theme-switching::view-transition-old(root),
+.theme-switching::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+.theme-switching * {
+  view-transition-name: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

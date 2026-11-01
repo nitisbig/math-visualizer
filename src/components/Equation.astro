@@ -11,7 +11,24 @@ interface Props {
 }
 
 const { tex, caption, inline = false } = Astro.props;
-const html = katex.renderToString(tex, { displayMode: !inline, throwOnError: false, trust: true, strict: false });
+// \textcolor uses the dark palette's hex; swap each for its token so equations follow the theme.
+const TOKEN_HEX: Record<string, string> = {
+  "#00E1FF": "cyan",
+  "#FFB300": "amber",
+  "#FF2E93": "magenta",
+  "#2BFF6E": "lime",
+  "#2F86FF": "blue",
+  "#FF2B2B": "alert",
+  "#FF4136": "x",
+  "#FF8A00": "y",
+  "#FFE033": "z",
+};
+const html = katex
+  .renderToString(tex, { displayMode: !inline, throwOnError: false, trust: true, strict: false })
+  .replace(/color:\s*(#[0-9a-f]{6})/gi, (m, hex: string) => {
+    const t = TOKEN_HEX[hex.toUpperCase()];
+    return t ? `color:var(--${t})` : m;
+  });
 ---
 
 {

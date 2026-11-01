@@ -1,4 +1,4 @@
-import { C, type Token } from "../../lib/theme";
+import { cssVar, type Token } from "../../lib/theme";
 
 export type ReadoutItem = { label: string; value: string; color?: Token };
 
@@ -9,7 +9,7 @@ export default function Readout({ items }: { items: ReadoutItem[] }) {
       {items.map((it) => (
         <div key={it.label}>
           <dt>{it.label}</dt>
-          <dd className="mono" style={{ color: C[it.color ?? "ink"] }}>
+          <dd className="mono" style={{ color: cssVar(it.color ?? "ink") }}>
             {it.value}
           </dd>
         </div>

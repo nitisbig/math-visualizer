@@ -1,11 +1,14 @@
 // Shared drawing for the 4D widgets: drag-to-orbit and depth-shaded wireframes.
 import { useRef, useState } from "react";
 import { glow } from "../../lib/canvas";
-import { C, alpha } from "../../lib/theme";
+import { C, alpha, onThemeChange } from "../../lib/theme";
 import type { Edge, Orbit, ScreenPoint } from "./math";
 
 /** Edges are colored by the axis they run along: x red, y orange, z yellow, w blue. */
-export const AXIS_COLORS = [C.x, C.y, C.z, C.blue] as const;
+export const AXIS_COLORS: string[] = [];
+const syncAxes = () => AXIS_COLORS.splice(0, 4, C.x, C.y, C.z, C.blue);
+syncAxes();
+onThemeChange(syncAxes);
 export const AXIS_TOKENS = ["x", "y", "z", "blue"] as const;
 
 /** Drag on the canvas to turn the 3D shadow (an ordinary 3D rotation). */

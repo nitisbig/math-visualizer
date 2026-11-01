@@ -20,6 +20,28 @@
   --glass: rgba(8, 10, 14, 0.86);
   --shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 48px -24px rgba(0, 0, 0, 0.9);
 
+  /* Theme-dependent chrome: overlays, hovers and the canvas stage. */
+  --stage: #000000;
+  --raised: var(--s3);
+  --hair-3: rgba(255, 255, 255, 0.2);
+  --hover: rgba(255, 255, 255, 0.06);
+  --hover-2: rgba(255, 255, 255, 0.08);
+  --track: rgba(255, 255, 255, 0.1);
+  --handle: rgba(255, 255, 255, 0.22);
+  --ink-hi: #ffffff;
+  --bar: rgba(0, 0, 0, 0.72);
+  --bar-2: rgba(0, 0, 0, 0.82);
+  --sheet: rgba(9, 11, 16, 0.9);
+  --scrim: rgba(0, 0, 0, 0.6);
+  --knob-ring: rgba(0, 0, 0, 0.6);
+  --pop: 0 8px 24px -6px rgba(0, 0, 0, 0.8);
+  --sheet-shadow: 0 -16px 40px -12px rgba(0, 0, 0, 0.8);
+  --press-ring: rgba(255, 255, 255, 0.55);
+  --press-glow: rgba(0, 225, 255, 0.45);
+  --seg-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --thumb-bg: radial-gradient(120% 100% at 50% 0%, #0b1018, #000 70%);
+  --glow-blend: screen;
+
   --cyan: #00e1ff;
   --amber: #ffb300;
   --magenta: #ff2e93;
@@ -67,6 +89,62 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
 
   color-scheme: dark;
+}
+
+/* Light theme: cool porcelain surfaces, ink-dark type, and the same semantic
+   hues deepened so they hold contrast on white. Elevation reads as shadow
+   instead of brightness. Keep the palette in sync with LIGHT in lib/theme.ts. */
+:root[data-theme="light"] {
+  --bg: #f4f5f8;
+  --card: #ffffff;
+  --ink: #0b1220;
+  --ink-2: #283142;
+  --muted: #5d6677;
+  --grid: #e3e7ee;
+  --line: #d2d8e2;
+  --axis: #98a2b3;
+
+  --s0: #f1f3f7;
+  --s1: #ffffff;
+  --s2: #f6f7fa;
+  --s3: #eceff4;
+  --hair: rgba(15, 23, 42, 0.08);
+  --hair-2: rgba(15, 23, 42, 0.12);
+  --glass: rgba(255, 255, 255, 0.78);
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 2px 6px -2px rgba(16, 24, 40, 0.05), 0 28px 56px -28px rgba(16, 24, 40, 0.22);
+
+  --stage: #fcfcfd;
+  --raised: #ffffff;
+  --hair-3: rgba(15, 23, 42, 0.2);
+  --hover: rgba(15, 23, 42, 0.05);
+  --hover-2: rgba(15, 23, 42, 0.06);
+  --track: rgba(15, 23, 42, 0.1);
+  --handle: rgba(15, 23, 42, 0.18);
+  --ink-hi: #000000;
+  --bar: rgba(248, 249, 251, 0.74);
+  --bar-2: rgba(250, 251, 252, 0.86);
+  --sheet: rgba(255, 255, 255, 0.9);
+  --scrim: rgba(244, 245, 248, 0.85);
+  --knob-ring: #ffffff;
+  --pop: 0 10px 24px -8px rgba(16, 24, 40, 0.35);
+  --sheet-shadow: 0 -12px 40px -16px rgba(16, 24, 40, 0.22);
+  --press-ring: rgba(5, 150, 190, 0.45);
+  --press-glow: rgba(5, 150, 190, 0.22);
+  --seg-shadow: 0 1px 2px rgba(16, 24, 40, 0.08), 0 2px 8px -2px rgba(16, 24, 40, 0.08);
+  --thumb-bg: radial-gradient(120% 100% at 50% 0%, #ffffff, #eef1f6 75%);
+  --glow-blend: multiply;
+
+  --cyan: #0596be;
+  --amber: #e08600;
+  --magenta: #e0157a;
+  --lime: #0e9f55;
+  --blue: #2563eb;
+  --alert: #e0242b;
+  --x: #e2362c;
+  --y: #ee7400;
+  --z: #c99a00;
+
+  color-scheme: light;
 }
 
 @media (min-width: 768px) {
