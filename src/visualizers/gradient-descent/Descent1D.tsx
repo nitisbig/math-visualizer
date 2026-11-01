@@ -62,7 +62,7 @@ export default function Descent1D({ explain }: { explain?: ReactNode }) {
       // Static: grid, axes, the loss curve with its soft fill, minima.
       layer(ctx, fnId, size, (c) => {
         dotGrid(c, size);
-        axes(c, sx, sy, size, { color: C.axis, label: C.muted, ticks: { x: [-2, -1, 1, 2] }, font: `11px ${FONT_MONO}` });
+        axes(c, sx, sy, size, { color: C.axis, label: C.muted, ticks: { x: [-2, -1, 1, 2] }, font: `12px ${FONT_MONO}` });
         const curve = new Path2D();
         for (let i = 0; i <= 240; i++) {
           const x = X[0] + ((X[1] - X[0]) * i) / 240;
@@ -146,7 +146,7 @@ export default function Descent1D({ explain }: { explain?: ReactNode }) {
 
         ball(ctx, px, py, 7, diverged ? C.alert : C.amber);
 
-        ctx.font = `11px ${FONT_MONO}`;
+        ctx.font = `12px ${FONT_MONO}`;
         ctx.fillStyle = C.magenta;
         const right = px > size.w * 0.6;
         ctx.textAlign = right ? "right" : "left";
@@ -225,6 +225,7 @@ export default function Descent1D({ explain }: { explain?: ReactNode }) {
         />
       }
       status={status}
+      accent="amber"
       coach="Drag the curve to pick a start"
       transport={{
         playing,

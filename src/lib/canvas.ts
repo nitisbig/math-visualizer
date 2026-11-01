@@ -2,6 +2,9 @@ import { useEffect, useRef, type DependencyList } from "react";
 import { alpha } from "./theme";
 
 export type Size = { w: number; h: number };
+
+/** Backing-store scale: at least 2× so lines stay sharp even on 1× screens. */
+const dprOf = () => Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
 export type DrawFn = (ctx: CanvasRenderingContext2D, size: Size) => void;
 
 /**
@@ -25,7 +28,7 @@ export function useCanvas(draw: DrawFn, deps: DependencyList) {
     }
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx || sizeRef.current.w === 0) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = dprOf();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, sizeRef.current.w, sizeRef.current.h);
     drawRef.current(ctx, sizeRef.current);
@@ -36,7 +39,7 @@ export function useCanvas(draw: DrawFn, deps: DependencyList) {
     if (!canvas) return;
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = dprOf();
       sizeRef.current = { w: width, h: height };
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
@@ -71,7 +74,7 @@ export function useLayer() {
   return (ctx: CanvasRenderingContext2D, key: string, size: Size, render: DrawFn) => {
     const k = `${key}:${size.w}x${size.h}`;
     if (cache.current?.key !== k) {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = dprOf();
       const img = cache.current?.img ?? document.createElement("canvas");
       img.width = Math.round(size.w * dpr);
       img.height = Math.round(size.h * dpr);
@@ -126,9 +129,9 @@ export function pointerPos(e: { clientX: number; clientY: number }, canvas: HTML
 }
 
 /**
- * Draws `fn` with a soft halo, then crisp on top. The halo is two wide, faint
- * strokes of the same path (fills are stroked too), which costs a fraction of
- * `shadowBlur` and keeps glow a highlight, not a wash.
+ * Draws `fn` with a tight neon halo, then crisp on top. The halo is two
+ * narrow strokes of the same path (fills are stroked too), which costs a
+ * fraction of `shadowBlur` and keeps the edge sharp instead of hazy.
  */
 export function glow(ctx: CanvasRenderingContext2D, color: string, blur: number, fn: () => void) {
   const fill = ctx.fill;
@@ -139,8 +142,8 @@ export function glow(ctx: CanvasRenderingContext2D, color: string, blur: number,
   ctx.fill = ((p?: Path2D | CanvasFillRule) => (p instanceof Path2D ? ctx.stroke(p) : ctx.stroke())) as typeof ctx.fill;
   const base = ctx.lineWidth;
   for (const [k, a] of [
-    [0.9, 0.07],
-    [0.45, 0.14],
+    [0.5, 0.16],
+    [0.22, 0.32],
   ]) {
     ctx.lineWidth = base + blur * k;
     ctx.globalAlpha = a;
@@ -151,19 +154,27 @@ export function glow(ctx: CanvasRenderingContext2D, color: string, blur: number,
   fn();
 }
 
-/** A lit sphere: radial highlight, rim and a soft halo. */
+/** A lit sphere: tight halo, solid body, specular highlight and a bright rim. */
 export function ball(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, color: string) {
-  const halo = ctx.createRadialGradient(x, y, r * 0.6, x, y, r * 3.2);
-  halo.addColorStop(0, alpha(color, 0.35));
+  const halo = ctx.createRadialGradient(x, y, r, x, y, r * 2.2);
+  halo.addColorStop(0, alpha(color, 0.55));
   halo.addColorStop(1, alpha(color, 0));
   ctx.fillStyle = halo;
-  dot(ctx, x, y, r * 3.2);
-  const body = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+  dot(ctx, x, y, r * 2.2);
+  const body = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.05, x, y, r);
   body.addColorStop(0, "#FFFFFF");
-  body.addColorStop(0.35, color);
-  body.addColorStop(1, alpha(color, 0.75));
+  body.addColorStop(0.3, color);
+  body.addColorStop(1, color);
   ctx.fillStyle = body;
   dot(ctx, x, y, r);
+  ctx.save();
+  ctx.strokeStyle = "#FFFFFF";
+  ctx.globalAlpha = 0.9;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(x, y, r + 0.75, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 }
 
 /** A straight line whose ends fade out. */
@@ -210,12 +221,12 @@ export function arrow(
   ctx.fill();
 }
 
-/** Faint dot grid, the only allowed background texture. */
-export function dotGrid(ctx: CanvasRenderingContext2D, { w, h }: Size, spacing = 32, color = "rgba(245,247,250,0.06)") {
+/** Dot grid, the only allowed background texture. */
+export function dotGrid(ctx: CanvasRenderingContext2D, { w, h }: Size, spacing = 32, color = "rgba(248,250,252,0.16)") {
   ctx.fillStyle = color;
   for (let x = spacing / 2; x < w; x += spacing) {
     for (let y = spacing / 2; y < h; y += spacing) {
-      ctx.fillRect(x - 0.75, y - 0.75, 1.5, 1.5);
+      ctx.fillRect(Math.round(x) - 1, Math.round(y) - 1, 2, 2);
     }
   }
 }
@@ -231,7 +242,7 @@ export function axes(
   const x0 = Math.max(0, Math.min(size.w, sx(0)));
   const y0 = Math.max(0, Math.min(size.h, sy(0)));
   ctx.strokeStyle = opts.color;
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 1.25;
   line(ctx, 0, y0, size.w, y0);
   line(ctx, x0, 0, x0, size.h);
   if (!opts.ticks) return;

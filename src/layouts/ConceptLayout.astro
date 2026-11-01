@@ -37,11 +37,6 @@ const app = body.includes("data-workspace");
     )
   }
   <div class="wrap concept">
-    <aside class="rail" aria-label="On this page">
-      <a href="#intro" class="rail-top">{title}</a>
-      <ol class="rail-list" data-rail></ol>
-    </aside>
-
     <div class="panes" data-panes data-active="intro" data-app={app ? "" : undefined}>
       <header class="intro active" id="intro" data-pane="intro">
         <p class="eyebrow">{category}</p>
@@ -104,10 +99,9 @@ const app = body.includes("data-workspace");
 </Base>
 
 <script>
-  // Builds the desktop rail and the phone tab bar from the page's workspaces,
+  // Builds the phone tab bar from the page's workspaces,
   // shows one pane at a time on phones, and keeps the active one in the hash.
   const panes = document.querySelector<HTMLElement>("[data-panes]")!;
-  const rail = document.querySelector<HTMLElement>("[data-rail]")!;
   const tabbar = document.querySelector<HTMLElement>("[data-tabbar]")!;
   const workspaces = [...document.querySelectorAll<HTMLElement>("[data-workspace]")];
   const phone = window.matchMedia("(max-width: 767px)");
@@ -116,13 +110,6 @@ const app = body.includes("data-workspace");
   const paneOf = new Map<string, HTMLElement>([["intro", document.getElementById("intro")!]]);
   workspaces.forEach((ws, i) => {
     paneOf.set(ws.id, (ws.closest("astro-island") as HTMLElement) ?? ws);
-    const n = String(i + 1).padStart(2, "0");
-
-    const li = document.createElement("li");
-    li.innerHTML = `<a href="#${ws.id}"><span class="n">${n}</span><span class="t"></span></a>`;
-    li.querySelector(".t")!.textContent = ws.dataset.title ?? ws.id;
-    rail.append(li);
-
     const b = document.createElement("button");
     b.type = "button";
     b.dataset.tab = ws.id;
@@ -195,19 +182,6 @@ const app = body.includes("data-workspace");
   document.querySelector("[data-reveal]")?.addEventListener("click", () => setFocus(false));
   document.querySelector("[data-focus-btn]")?.addEventListener("click", () => setFocus(true));
   document.addEventListener("keydown", (e) => e.key === "Escape" && setFocus(false));
-
-  // Desktop scroll-spy for the rail.
-  const links = new Map([...rail.querySelectorAll<HTMLAnchorElement>("a")].map((a) => [a.hash.slice(1), a]));
-  const spy = new IntersectionObserver(
-    (entries) => {
-      for (const en of entries) {
-        if (!en.isIntersecting) continue;
-        links.forEach((a, id) => a.classList.toggle("on", id === en.target.id));
-      }
-    },
-    { rootMargin: "-45% 0px -50% 0px" },
-  );
-  workspaces.forEach((ws) => spy.observe(ws));
 </script>
 
 <style>
@@ -240,65 +214,6 @@ const app = body.includes("data-workspace");
     padding-left: 20px;
   }
 
-  /* Rail: wide desktops only */
-  .rail {
-    display: none;
-  }
-  @media (min-width: 1280px) {
-    .concept {
-      display: grid;
-      grid-template-columns: 190px minmax(0, 1fr);
-      gap: 40px;
-    }
-    .rail {
-      display: block;
-      position: sticky;
-      top: 96px;
-      align-self: start;
-      padding-top: 64px;
-    }
-  }
-  .rail-top {
-    display: block;
-    margin-bottom: 16px;
-    font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--ink);
-    text-decoration: none;
-  }
-  .rail-list {
-    display: grid;
-    gap: 2px;
-    margin: 0;
-    padding: 0 0 0 1px;
-    list-style: none;
-    border-left: 1px solid var(--hair-2);
-  }
-  .rail-list :global(a) {
-    display: flex;
-    gap: 10px;
-    margin-left: -1px;
-    padding: 7px 12px;
-    border-left: 1px solid transparent;
-    font-size: 13px;
-    line-height: 1.35;
-    color: var(--muted);
-    text-decoration: none;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  .rail-list :global(a:hover) {
-    color: var(--ink-2);
-  }
-  .rail-list :global(a.on) {
-    color: var(--ink);
-    border-left-color: var(--ink);
-  }
-  .rail-list :global(.n) {
-    font: 400 11px/1.6 var(--font-mono);
-    color: var(--muted);
-  }
-
   /* Intro */
   .intro {
     padding: 64px 0 40px;
@@ -313,7 +228,7 @@ const app = body.includes("data-workspace");
     max-width: 36em;
     margin: 0;
     font-size: clamp(16px, 1.8vw, 19px);
-    color: var(--muted);
+    color: var(--ink-2);
   }
   .intro-actions {
     display: flex;
@@ -573,7 +488,6 @@ const app = body.includes("data-workspace");
     color: var(--bg);
   }
 
-  html[data-focus] .rail,
   html[data-focus] .intro,
   html[data-focus] .outro,
   html[data-focus] .tabbar,

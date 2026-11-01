@@ -123,7 +123,7 @@ export default function Rotate4D({ explain }: { explain?: ReactNode }) {
       ctx.moveTo(x0 - 4, y0 - bh / max);
       ctx.lineTo(x0 + span + 2, y0 - bh / max);
       ctx.stroke();
-      ctx.font = `11px ${FONT_MONO}`;
+      ctx.font = `12px ${FONT_MONO}`;
       ctx.textBaseline = "middle";
       colorText(ctx, [["true length 1", C.ink]], x0 + span + 8, y0 - bh / max);
       ctx.textBaseline = "top";
@@ -163,6 +163,7 @@ export default function Rotate4D({ explain }: { explain?: ReactNode }) {
         />
       }
       status={{ text: `Rotating in ${planeLabel} · ${Math.round((theta * 180) / Math.PI)}°`, color: C.ink }}
+      accent="blue"
       coach="Drag the picture for a 3D turn"
       transport={{
         playing,

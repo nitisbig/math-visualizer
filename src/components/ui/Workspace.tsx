@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { C, type Token } from "../../lib/theme";
 import Legend, { type LegendItem } from "./Legend";
 import PlayControls, { type PlayProps } from "./PlayControls";
@@ -28,6 +28,8 @@ type Props = {
   tries?: Try[];
   /** One-time gesture hint over the canvas. */
   coach?: string;
+  /** Color of the glow under the pointer while pressing the canvas. */
+  accent?: Token;
   /** Authored explanation (Astro slot from the MDX page). */
   explain?: ReactNode;
 };
@@ -54,6 +56,47 @@ function useCoach(id: string, enabled: boolean) {
   return [show, dismiss] as const;
 }
 
+/** A glow that follows a press on the canvas, plus a ring that bursts out where it lands. */
+function useTouchGlow() {
+  const glowRef = useRef<HTMLSpanElement>(null);
+  // Rings live in their own empty span so they never sit among Preact-managed children.
+  const ringsRef = useRef<HTMLSpanElement>(null);
+  const pressed = useRef<number | null>(null);
+
+  const place = (e: React.PointerEvent<HTMLElement>) => {
+    const g = glowRef.current;
+    if (!g) return null;
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - r.left;
+    const y = e.clientY - r.top;
+    g.style.translate = `${x}px ${y}px`;
+    return { x, y };
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLElement>) => {
+    if (!(e.target instanceof HTMLCanvasElement)) return;
+    const at = place(e);
+    if (!at) return;
+    pressed.current = e.pointerId;
+    glowRef.current!.classList.add("on");
+    const ring = document.createElement("span");
+    ring.className = "touch-ring";
+    ring.style.translate = `${at.x}px ${at.y}px`;
+    ring.addEventListener("animationend", () => ring.remove());
+    ringsRef.current?.append(ring);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLElement>) => {
+    if (pressed.current === e.pointerId) place(e);
+  };
+  const onPointerUp = (e: React.PointerEvent<HTMLElement>) => {
+    if (pressed.current !== e.pointerId) return;
+    pressed.current = null;
+    glowRef.current?.classList.remove("on");
+  };
+
+  return { glowRef, ringsRef, handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp } };
+}
+
 const EXPLAIN = (
   <svg viewBox="0 0 16 16" aria-hidden="true">
     <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5" />
@@ -68,6 +111,7 @@ export default function Workspace(p: Props) {
   const [open, setOpen] = useState(false);
   const [coach, dismissCoach] = useCoach(id, !!p.coach);
   const statusColor = p.status?.color ? (C[p.status.color as Token] ?? p.status.color) : C.muted;
+  const touch = useTouchGlow();
 
   const toggleExplain = () => {
     const next = view === "explain" ? "controls" : "explain";
@@ -77,8 +121,15 @@ export default function Workspace(p: Props) {
 
   return (
     <section className="ws" id={id} data-workspace data-tab={p.tab} data-title={p.title} aria-labelledby={`${id}-t`}>
-      <div className="ws-stage" onPointerDownCapture={dismissCoach}>
+      <div
+        className="ws-stage"
+        style={{ "--accent": C[p.accent ?? "cyan"] } as React.CSSProperties}
+        onPointerDownCapture={dismissCoach}
+        {...touch.handlers}
+      >
         {p.stage}
+        <span ref={touch.glowRef} className="touch-glow" aria-hidden="true" />
+        <span ref={touch.ringsRef} aria-hidden="true" />
         {p.status && (
           <p className="ws-status" style={{ color: statusColor }} aria-live="polite">
             <span className="pulse" style={{ background: statusColor }} aria-hidden="true" />

@@ -20,7 +20,7 @@ import Descent2D from "../../visualizers/gradient-descent/Descent2D";
 3. Each step moves the <span class="c-amber">ball</span> against the slope, by an amount set by the learning rate η. The dashed ring shows where the next step will land.
 4. Small η crawls, η = 1 jumps straight to the bottom, larger η zig-zags, and past 2 the ball <span class="c-alert">flies off</span>.
 
-<Equation tex={String.raw`x_{\text{new}} = x - \textcolor{#FFB020}{\eta}\,\textcolor{#FF3D9A}{f'(x)}`} caption="The whole algorithm: one line, repeated." />
+<Equation tex={String.raw`x_{\text{new}} = x - \textcolor{#FFB300}{\eta}\,\textcolor{#FF2E93}{f'(x)}`} caption="The whole algorithm: one line, repeated." />
 
 </div>
 </Descent1D>
@@ -30,7 +30,7 @@ import Descent2D from "../../visualizers/gradient-descent/Descent2D";
 
 Real models have millions of knobs, not one. With two of them the loss becomes a landscape, and the slope becomes the **gradient** <span class="c-magenta">∇f</span>, an arrow pointing straight uphill. Gradient descent walks the opposite way.
 
-<Equation tex={String.raw`\mathbf{p}_{\text{new}} = \mathbf{p} - \textcolor{#FFB020}{\eta}\,\textcolor{#FF3D9A}{\nabla f(\mathbf{p})}`} />
+<Equation tex={String.raw`\mathbf{p}_{\text{new}} = \mathbf{p} - \textcolor{#FFB300}{\eta}\,\textcolor{#FF2E93}{\nabla f(\mathbf{p})}`} />
 
 - **Narrow valley:** plain gradient descent zig-zags between the walls. **Momentum** rolls straight down the valley.
 - **Two minima:** gradient descent settles in the nearest dip. With momentum at β = 0.9 the ball carries enough speed to escape into the deeper one.

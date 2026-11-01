@@ -32,7 +32,7 @@ function view(fn: Fn2, { w, h }: Size) {
 /** Shaded relief + contour lines for one surface. Rendered into a cached layer. */
 function renderSurface(ctx: CanvasRenderingContext2D, fn: Fn2, size: Size) {
   const { sx, sy } = view(fn, size);
-  const cell = 4;
+  const cell = 2;
   const nx = Math.ceil(size.w / cell);
   const ny = Math.ceil(size.h / cell);
   const W = nx + 1;
@@ -82,8 +82,8 @@ function renderSurface(ctx: CanvasRenderingContext2D, fn: Fn2, size: Size) {
   const segs = contours(grid, nx, ny, cell, levels);
   segs.forEach((seg, li) => {
     const major = li % 4 === 3;
-    ctx.lineWidth = major ? 1.1 : 0.8;
-    ctx.strokeStyle = alpha(C.cyan, (major ? 0.7 : 0.45) - (li / N) * 0.3);
+    ctx.lineWidth = major ? 1.4 : 1;
+    ctx.strokeStyle = alpha(C.cyan, (major ? 0.95 : 0.65) - (li / N) * 0.3);
     ctx.beginPath();
     for (let k = 0; k < seg.length; k += 4) {
       ctx.moveTo(seg[k], seg[k + 1]);
@@ -95,7 +95,7 @@ function renderSurface(ctx: CanvasRenderingContext2D, fn: Fn2, size: Size) {
   // Vignette keeps the eye in the middle.
   const v = ctx.createRadialGradient(size.w / 2, size.h / 2, Math.min(size.w, size.h) * 0.35, size.w / 2, size.h / 2, Math.hypot(size.w, size.h) * 0.6);
   v.addColorStop(0, "rgba(0,0,0,0)");
-  v.addColorStop(1, "rgba(0,0,0,0.55)");
+  v.addColorStop(1, "rgba(0,0,0,0.35)");
   ctx.fillStyle = v;
   ctx.fillRect(0, 0, size.w, size.h);
 
@@ -298,6 +298,7 @@ export default function Descent2D({ explain }: { explain?: ReactNode }) {
         />
       }
       status={status}
+      accent="amber"
       coach="Tap the map to drop a ball"
       transport={{
         playing,

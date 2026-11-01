@@ -53,7 +53,7 @@ export default function EulerCircle({ explain }: { explain?: ReactNode }) {
       ctx.lineWidth = 1;
       line(ctx, 0, oy, size.w, oy);
       line(ctx, ox, 0, ox, size.h);
-      ctx.font = `11px ${FONT_MONO}`;
+      ctx.font = `12px ${FONT_MONO}`;
       ctx.fillStyle = C.muted;
       ctx.textAlign = "left";
       ctx.textBaseline = "bottom";
@@ -198,6 +198,7 @@ export default function EulerCircle({ explain }: { explain?: ReactNode }) {
         />
       }
       status={atPi ? { text: "e^iπ = −1", color: C.lime } : { text: `θ = ${(theta / Math.PI).toFixed(3)}π`, color: C.amber }}
+      accent="amber"
       coach="Drag the point around the circle"
       transport={{
         playing: tween !== null,

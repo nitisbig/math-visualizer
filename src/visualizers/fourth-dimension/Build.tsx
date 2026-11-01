@@ -80,7 +80,7 @@ export default function Build({ explain }: { explain?: ReactNode }) {
 
       // Corner coordinates: each digit in its axis color.
       if (bits && f === 0 && k > 0) {
-        ctx.font = `11px ${FONT_MONO}`;
+        ctx.font = `12px ${FONT_MONO}`;
         ctx.textBaseline = "bottom";
         stage.verts.forEach((v, i) => {
           const runs = v.slice(0, k).map((c, a) => [String(c + 0.5), AXIS_COLORS[a]] as [string, string]);
@@ -132,6 +132,7 @@ export default function Build({ explain }: { explain?: ReactNode }) {
           ? { text: `${cap(NAMES[k])} → ${NAMES[k + 1]} · along ${AXES[k]}`, color: AXIS_COLORS[k] }
           : { text: cap(NAMES[k]), color: C.ink }
       }
+      accent="blue"
       coach="Drag the picture to turn it"
       transport={{
         playing: tween !== null,

@@ -60,10 +60,10 @@ type WireOpts = {
 
 /**
  * Far edges first, each tinted and thinned by depth, so the shape reads in 3D.
- * The optional glow is a cheap halo: wide faint strokes per color, no shadowBlur.
+ * The optional glow is a cheap halo: narrow strokes per color, no shadowBlur.
  */
 export function drawWire(ctx: CanvasRenderingContext2D, pts: ScreenPoint[], edges: Edge[], opts: WireOpts = {}) {
-  const { width = 2, color, glowBlur = 0, far = 0.35, emphasis } = opts;
+  const { width = 2, color, glowBlur = 0, far = 0.5, emphasis } = opts;
   const shade = depthShade(pts, far);
   const order = edges.map((_, i) => i).sort((i, j) => mid(pts, edges[j]) - mid(pts, edges[i]));
   ctx.lineCap = "round";
@@ -80,8 +80,8 @@ export function drawWire(ctx: CanvasRenderingContext2D, pts: ScreenPoint[], edge
         ctx.lineTo(pts[e.b].x, pts[e.b].y);
       }
       for (const [k, a] of [
-        [0.9, 0.06],
-        [0.45, 0.12],
+        [0.5, 0.14],
+        [0.22, 0.28],
       ]) {
         ctx.strokeStyle = alpha(c, a);
         ctx.lineWidth = width + glowBlur * k;

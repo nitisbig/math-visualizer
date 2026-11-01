@@ -57,7 +57,7 @@ export default function Compound({ explain }: { explain?: ReactNode }) {
         c.lineWidth = 1;
         line(c, sx(0), sy(0.9), sx(0), sy(2.9));
         line(c, sx(0), sy(1), sx(1), sy(1));
-        c.font = `11px ${FONT_MONO}`;
+        c.font = `12px ${FONT_MONO}`;
         c.fillStyle = C.muted;
         c.textAlign = "right";
         c.textBaseline = "middle";

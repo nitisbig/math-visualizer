@@ -7,7 +7,7 @@ export default function Legend({ items }: { items: LegendItem[] }) {
     <ul className="legend">
       {items.map((it) => (
         <li key={it.label}>
-          <span className="swatch" style={{ background: C[it.color] }} />
+          <span className="swatch" style={{ background: C[it.color], color: C[it.color] }} />
           {it.label}
         </li>
       ))}

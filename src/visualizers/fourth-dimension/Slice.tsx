@@ -92,7 +92,7 @@ export default function Slice({ explain }: { explain?: ReactNode }) {
       depthDots(ctx, rp, 3, C.ink);
 
       // View captions, centred in each half so they stay clear of the overlays.
-      ctx.font = `11px ${FONT_MONO}`;
+      ctx.font = `12px ${FONT_MONO}`;
       ctx.textBaseline = "top";
       ctx.textAlign = "center";
       ctx.fillStyle = C.muted;
@@ -144,6 +144,7 @@ export default function Slice({ explain }: { explain?: ReactNode }) {
         />
       }
       status={{ text: `${formula(lead)} = ${fmt(s, 2)}`, color: C.blue }}
+      accent="blue"
       coach="Drag to turn both views"
       transport={{
         playing,

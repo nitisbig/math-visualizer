@@ -21,7 +21,7 @@ import Slice from "../../visualizers/fourth-dimension/Slice";
 3. The last drag goes along <span class="c-blue">w</span>, the direction we can’t see. The picture is drawn **in perspective along w**: the copy with the larger w is closer to a 4D camera, so it looks bigger. That’s why a tesseract looks like a cube inside a cube.
 4. Turn on **corner coordinates**: every corner is just four 0s and 1s. Sixteen combinations, sixteen corners.
 
-<Equation tex={String.raw`\sqrt{\textcolor{#FF5A4E}{1^2} + \textcolor{#FF9F3D}{1^2} + \textcolor{#FFD17E}{1^2} + \textcolor{#5FB6FF}{1^2}} = \sqrt{4} = 2`} caption="Pythagoras doesn’t stop at three: the tesseract’s long diagonal is exactly 2." />
+<Equation tex={String.raw`\sqrt{\textcolor{#FF4136}{1^2} + \textcolor{#FF8A00}{1^2} + \textcolor{#FFE033}{1^2} + \textcolor{#2F86FF}{1^2}} = \sqrt{4} = 2`} caption="Pythagoras doesn’t stop at three: the tesseract’s long diagonal is exactly 2." />
 
 </div>
 </Build>
@@ -31,13 +31,13 @@ import Slice from "../../visualizers/fourth-dimension/Slice";
 
 In 3D we say an object spins *around an axis*, but when a cube spins around a vertical rod its height never changes. Only the other two coordinates mix. Rotation really happens **in a plane**, and with four axes there are six planes to turn in.
 
-<Equation tex={String.raw`\begin{pmatrix} \textcolor{#FF5A4E}{x'} \\ \textcolor{#FF9F3D}{y'} \\ \textcolor{#FFD17E}{z'} \\ \textcolor{#5FB6FF}{w'} \end{pmatrix} = \begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & \cos\theta & -\sin\theta \\ 0 & 0 & \sin\theta & \cos\theta \end{pmatrix} \begin{pmatrix} \textcolor{#FF5A4E}{x} \\ \textcolor{#FF9F3D}{y} \\ \textcolor{#FFD17E}{z} \\ \textcolor{#5FB6FF}{w} \end{pmatrix}`} caption="The zw rotation: x and y pass straight through." />
+<Equation tex={String.raw`\begin{pmatrix} \textcolor{#FF4136}{x'} \\ \textcolor{#FF8A00}{y'} \\ \textcolor{#FFE033}{z'} \\ \textcolor{#2F86FF}{w'} \end{pmatrix} = \begin{pmatrix} 1 & 0 & 0 & 0 \\ 0 & 1 & 0 & 0 \\ 0 & 0 & \cos\theta & -\sin\theta \\ 0 & 0 & \sin\theta & \cos\theta \end{pmatrix} \begin{pmatrix} \textcolor{#FF4136}{x} \\ \textcolor{#FF8A00}{y} \\ \textcolor{#FFE033}{z} \\ \textcolor{#2F86FF}{w} \end{pmatrix}`} caption="The zw rotation: x and y pass straight through." />
 
 - **zw:** the inner cube grows, the outer cube shrinks, and they pass through each other. Nothing bends: the 4D edge lengths stay at 1 and det R = 1. Only the shadow stretches.
 - **xy with a straight shadow:** dropping w puts every corner on top of another, so you see a plain cube. That’s why the picture uses perspective.
 - **xy + zw:** a **double rotation**, impossible in 3D. Every corner travels a circle; only the centre stays still.
 
-<Equation tex={String.raw`x' = \frac{d}{d - \textcolor{#5FB6FF}{w}}\,x`} caption="Perspective along w: points with a large w come closer and grow." />
+<Equation tex={String.raw`x' = \frac{d}{d - \textcolor{#2F86FF}{w}}\,x`} caption="Perspective along w: points with a large w come closer and grow." />
 
 </div>
 </Rotate4D>
@@ -52,7 +52,7 @@ A flat creature on a sheet of paper never sees a ball fall through its world. It
 - **Edge first:** a thin triangular prism that turns into a hexagonal prism.
 - **Square first:** a box that stretches to 1 × 1 × √2 and back.
 
-<Equation tex={String.raw`\textcolor{#FF5A4E}{x} + \textcolor{#FF9F3D}{y} + \textcolor{#FFD17E}{z} + \textcolor{#5FB6FF}{w} = s`} caption="The corner-first cut: a flat 3D space tilted equally toward all four axes." />
+<Equation tex={String.raw`\textcolor{#FF4136}{x} + \textcolor{#FF8A00}{y} + \textcolor{#FFE033}{z} + \textcolor{#2F86FF}{w} = s`} caption="The corner-first cut: a flat 3D space tilted equally toward all four axes." />
 
 </div>
 </Slice>

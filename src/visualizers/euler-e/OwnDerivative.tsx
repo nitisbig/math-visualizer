@@ -26,7 +26,7 @@ export default function OwnDerivative({ explain }: { explain?: ReactNode }) {
     (ctx, size) => {
       const { sx, sy } = frame(size.w, size.h);
       dotGrid(ctx, size);
-      axes(ctx, sx, sy, size, { color: C.axis, label: C.muted, ticks: { x: [-2, -1, 1, 2], y: [2, 4, 6] }, font: `11px ${FONT_MONO}` });
+      axes(ctx, sx, sy, size, { color: C.axis, label: C.muted, ticks: { x: [-2, -1, 1, 2], y: [2, 4, 6] }, font: `12px ${FONT_MONO}` });
 
       // Reference: e^x, faint, so you can see where you're heading.
       if (!match) {
@@ -149,6 +149,7 @@ export default function OwnDerivative({ explain }: { explain?: ReactNode }) {
         />
       }
       status={match ? { text: "a = e · slope = height", color: C.lime } : { text: `${a.toFixed(3)}ˣ · slope ÷ height = ${fmt(slope / h, 3)}`, color: C.cyan }}
+      accent="amber"
       coach="Drag the graph to move the point"
       controls={
         <>

@@ -26,7 +26,7 @@ const seq = [1, 2, 3, 4, 6, 8, 12, 16, 24, 32].map((n, i) => ({
 const yOf = (v: number) => 150 - ((v - 1.9) / (2.8 - 1.9)) * 120;
 
 // Fourth dimension: the tesseract's perspective shadow, edges colored by axis.
-const AXIS_HEX = ["#FF5A4E", "#FF9F3D", "#FFD17E", "#5FB6FF"];
+const AXIS_HEX = ["#FF4136", "#FF8A00", "#FFE033", "#2F86FF"];
 const cam = camera({ yaw: -0.6, pitch: 0.42 }, 150, 82, 54);
 const tess = TESSERACT.verts.map((v) => cam(perspective(apply(rotation("zw", 0.35), centered(v)), 2.2)));
 const tessEdges = [...TESSERACT.edges].sort(
@@ -39,28 +39,28 @@ const tessEdges = [...TESSERACT.edges].sort(
     slug === "gradient-descent" && (
       <g>
         {rings.map((r, i) => (
-          <ellipse cx="160" cy="128" rx={r * 1.7} ry={r} fill="none" stroke="#22D3EE" stroke-opacity={0.55 - i * 0.09} />
+          <ellipse cx="160" cy="128" rx={r * 1.7} ry={r} fill="none" stroke="#00E1FF" stroke-opacity={0.55 - i * 0.09} />
         ))}
-        <polyline class="draw" pathLength="1" points={path.map((p) => p.join(",")).join(" ")} fill="none" stroke="#FFB020" stroke-width="2" stroke-linejoin="round" />
+        <polyline class="draw" pathLength="1" points={path.map((p) => p.join(",")).join(" ")} fill="none" stroke="#FFB300" stroke-width="2" stroke-linejoin="round" />
         {path.map(([x, y], i) => (
-          <circle class="pop" style={`animation-delay:${0.2 + i * 0.18}s`} cx={x} cy={y} r="2.5" fill="#FFB020" />
+          <circle class="pop" style={`animation-delay:${0.2 + i * 0.18}s`} cx={x} cy={y} r="2.5" fill="#FFB300" />
         ))}
-        <circle class="pulse" cx="160" cy="128" r="4" fill="#C6FF4A" />
+        <circle class="pulse" cx="160" cy="128" r="4" fill="#2BFF6E" />
       </g>
     )
   }
   {
     slug === "eulers-number" && (
       <g>
-        <line x1="10" x2="290" y1={yOf(Math.E)} y2={yOf(Math.E)} stroke="#C6FF4A" stroke-dasharray="4 4" stroke-opacity="0.8" />
-        <text x="290" y={yOf(Math.E) - 8} fill="#C6FF4A" font-family="monospace" font-size="12" text-anchor="end">
+        <line x1="10" x2="290" y1={yOf(Math.E)} y2={yOf(Math.E)} stroke="#2BFF6E" stroke-dasharray="4 4" stroke-opacity="0.8" />
+        <text x="290" y={yOf(Math.E) - 8} fill="#2BFF6E" font-family="monospace" font-size="12" text-anchor="end">
           e = 2.71828…
         </text>
         {seq.map((s, i) => (
-          <line class="grow" style={`animation-delay:${i * 0.07}s`} x1={s.x} x2={s.x} y1="150" y2={yOf(s.v)} stroke="#22D3EE" stroke-opacity="0.35" stroke-width="10" />
+          <line class="grow" style={`animation-delay:${i * 0.07}s`} x1={s.x} x2={s.x} y1="150" y2={yOf(s.v)} stroke="#00E1FF" stroke-opacity="0.35" stroke-width="10" />
         ))}
         {seq.map((s, i) => (
-          <circle class="pop" style={`animation-delay:${0.3 + i * 0.07}s`} cx={s.x} cy={yOf(s.v)} r="3" fill="#FFB020" />
+          <circle class="pop" style={`animation-delay:${0.3 + i * 0.07}s`} cx={s.x} cy={yOf(s.v)} r="3" fill="#FFB300" />
         ))}
       </g>
     )
@@ -79,7 +79,7 @@ const tessEdges = [...TESSERACT.edges].sort(
           />
         ))}
         {tess.map((p) => (
-          <circle cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="1.8" fill="#F5F7FA" />
+          <circle cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r="1.8" fill="#F8FAFC" />
         ))}
       </g>
     )
